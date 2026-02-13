@@ -162,10 +162,6 @@ A comprehensive MERN stack event management platform for IIIT colleges, supporti
 - **Why leader-only disband**: Prevents griefing where non-leaders disband teams maliciously
 - **Why separate Team model**: Decouples team logic from Registration, enables independent team analytics
 
-**Design Choices**:
-- **Expandable team panel**: Collapsed by default to avoid overwhelming UI; expands on-demand
-- **Visual feedback**: Green (complete), Yellow (forming), Red (cancelled) status colors
-- **Empty slot indicators**: Shows unfilled positions visually (e.g., "Member 4: Waiting...")
 
 ---
 
@@ -198,11 +194,6 @@ A comprehensive MERN stack event management platform for IIIT colleges, supporti
 - **Why timestamp logging**: Provides forensic data for disputes ("I attended but wasn't marked")
 - **Why manual override**: Handles edge cases (lost phone, QR damage) without breaking process
 
-**Design Choices**:
-- **Color-coded result screens**: Green (success), Yellow (duplicate), Red (invalid/cancelled/wrong-event)
-- **Method badges**: "QR Scan" vs "Manual" distinguish automatic vs manual check-ins
-- **Not-Yet list priority**: Shows who hasn't checked in for proactive follow-up
-- **Export button placement**: Above tables for easy access after event
 
 ---
 
@@ -234,11 +225,6 @@ A comprehensive MERN stack event management platform for IIIT colleges, supporti
 - **Why min 5 chars for reason**: Prevents spam requests with empty/trivial reasons
 - **Why show history**: Transparency for organizers, reduces repeat requests
 
-**Design Choices**:
-- **Tab-based filtering**: Pending (Yellow), Approved (Green), Rejected (Red) for quick status scanning
-- **Copyable password display**: Monospace font, inline copy buttons (copy password, copy both)
-- **Prominent warning on force-change screen**: Yellow banner explains why access is blocked
-- **Textarea with live counter**: Shows remaining characters for reason input
 
 ---
 
@@ -270,12 +256,6 @@ A comprehensive MERN stack event management platform for IIIT colleges, supporti
 - **Why date dividers**: Breaks up long chat history visually
 - **Why separate ChatMessage model**: Isolates chat data, enables future features (search, @mentions)
 
-**Design Choices**:
-- **Purple theme**: Matches team feature branding (purple badges, buttons)
-- **Bubble chat UI**: Familiar messaging app UX (WhatsApp, Telegram)
-- **Relative timestamps**: "Today 3:45 PM" more readable than ISO strings
-- **Auto-scroll to bottom**: New messages appear without manual scrolling
-- **Rounded input**: Modern, friendly appearance vs. rectangular boxes
 
 ---
 
@@ -306,11 +286,6 @@ A comprehensive MERN stack event management platform for IIIT colleges, supporti
 - **Why all 3 methods**: Different users prefer different calendar apps (iOS users need .ics, Gmail users prefer Google Calendar)
 - **Why embed ticket ID**: Provides reference if user needs to look up registration details later
 
-**Design Choices**:
-- **Icon prefixes**: 📥 (download), Google/Outlook logos (via text) make purpose clear
-- **Small font size (text-xs)**: De-emphasizes calendar buttons vs. primary actions
-- **Helper text**: ".ics works with Apple Calendar, Thunderbird, and more" educates users
-- **Disabled if cancelled**: Calendar buttons don't show for cancelled registrations
 
 ---
 
@@ -343,8 +318,7 @@ A comprehensive MERN stack event management platform for IIIT colleges, supporti
 - **Input validation**: Required fields, email format, date logic (deadline < start < end)
 
 ### Performance Optimizations
-- **Tailwind CSS PurgeCSS**: Only 4.76 KB CSS (removed 95%+ unused styles)
-- **React.memo** (not used): Could optimize list components if performance issues arise
+- **Tailwind CSS PurgeCSS**: Only 4.76 KB CSS
 - **Database indexes**: On frequently queried fields (email, eventId)
 - **Pagination** (not implemented): Could add if event counts exceed 100+
 
@@ -425,67 +399,6 @@ A comprehensive MERN stack event management platform for IIIT colleges, supporti
    ```
    App opens automatically at http://localhost:3000
 
-4. **Login as admin**:
-   - Email: `admin@iiit.ac.in`
-   - Password: `Kavish@0`
-
-### Testing the Application
-
-#### Create a Test Organizer
-1. Login as admin
-2. Navigate to "Manage Clubs/Organizers"
-3. Create organizer:
-   - Organization Name: "Tech Club"
-   - Category: Technical
-   - Check "Auto-generate login credentials"
-4. Copy generated email and password
-5. Logout, login as organizer
-
-#### Create a Test Event
-1. As organizer, go to "Create Event"
-2. Fill form:
-   - Event Type: Normal Event
-   - Event Name: "Hackathon 2026"
-   - Eligibility: All Students
-   - Registration Deadline: Tomorrow
-   - Event Start: 2 days from now
-   - Registration Limit: 50
-   - Registration Fee: 100
-3. Check "Team-Based Event"
-4. Set Min Team Size: 2, Max Team Size: 4
-5. Click "Publish Now"
-
-#### Test Team Registration
-1. Logout, register as new participant:
-   - Email: `student1@iiit.ac.in`
-   - User Type: IIIT Student
-2. Browse events → Find "Hackathon 2026" → Register
-3. Create team:
-   - Team Name: "Code Warriors"
-   - Size: 4
-4. Copy invite code
-5. Open incognito window, register as `student2@iiit.ac.in`
-6. Browse → Hackathon → Register → Join Team → Paste code
-7. Repeat for 2 more students until team complete
-
-#### Test QR Scanner
-1. Login as organizer
-2. Go to "Ongoing Events" → Click event
-3. Change status to "Ongoing" (scanner tab appears)
-4. Open scanner tab
-5. In separate tab, login as student1
-6. My Events → View Ticket → Screenshot QR code
-7. Back to organizer → Upload QR image
-8. Verify "Attendance marked successfully"
-
-#### Test Team Chat
-1. Login as student1
-2. My Events → Expand team dashboard
-3. Click "Open Team Chat"
-4. Send message: "Hello team!"
-5. Login as student2 (different browser)
-6. Open team chat → See student1's message
-7. Reply to test real-time updates
 
 ---
 
@@ -726,7 +639,7 @@ Get live attendance statistics.
 ### Known Limitations
 - **Chat is polling-based**: Not true real-time (3-second delay); WebSocket would be better for production
 - **No pagination**: All events/registrations loaded at once (fine for <1000 events)
-- **No email verification**: Users can register with any email (should add OTP verification)
+- **No email verification**: Users can register with any email (should use CAS for IIIT students)
 - **No rate limiting**: Backend has no request throttling (should add express-rate-limit)
 - **No admin password change**: Admin password is hardcoded (should add password change flow)
 - **Mobile responsiveness**: Tailwind provides breakpoints, but not fully optimized for <375px screens
@@ -768,3 +681,4 @@ Get live attendance statistics.
 - JWT Best Practices: https://datatracker.ietf.org/doc/html/rfc8725
 
 ---
+
