@@ -37,7 +37,7 @@ function AdminDashboard({ user, logout, token }) {
     if (page === 'organizers') loadOrganizers();
     if (page === 'password') loadUsersForReset();
     if (page === 'reset-requests') loadResetRequests();
-  }, [page, showArchived, resetFilter]);
+  }, [page, showArchived, resetFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadStats = async () => {
     try {

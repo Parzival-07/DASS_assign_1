@@ -15,7 +15,7 @@ function BrowseEvents({ token, onSelectEvent }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { loadTrending(); }, []);
-  useEffect(() => { searchEvents(); }, [search, eventType, eligibility, startDate, endDate, followedOnly, matchingInterests]);
+  useEffect(() => { searchEvents(); }, [search, eventType, eligibility, startDate, endDate, followedOnly, matchingInterests]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadTrending = async () => {
     try {

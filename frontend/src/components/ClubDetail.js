@@ -10,7 +10,7 @@ function ClubDetail({ token, clubId, onBack, onSelectEvent }) {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('upcoming');
 
-  useEffect(() => { loadClub(); }, [clubId]);
+  useEffect(() => { loadClub(); }, [clubId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadClub = async () => {
     try {

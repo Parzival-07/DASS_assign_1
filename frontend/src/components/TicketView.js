@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -6,7 +6,7 @@ function TicketView({ token, ticketId, onBack }) {
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const loadTicket = async () => {
+  const loadTicket = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/registration/ticket/${ticketId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -17,11 +17,9 @@ function TicketView({ token, ticketId, onBack }) {
     } catch (err) {
       setLoading(false);
     }
-  };
+  }, [ticketId, token]);
 
-  useEffect(() => { loadTicket(); }, [ticketId, token]);
-    }
-  };
+  useEffect(() => { loadTicket(); }, [loadTicket]);
 
   if (loading) return <p>Loading ticket...</p>;
   if (!ticket) return <p>Ticket not found</p>;

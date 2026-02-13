@@ -7,7 +7,7 @@ function ClubsPage({ token, onSelectClub }) {
   const [following, setFollowing] = useState({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { loadClubs(); }, []);
+  useEffect(() => { loadClubs(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadClubs = async () => {
     try {

@@ -13,7 +13,7 @@ function MyEvents({ token, user, onViewTicket }) {
   const [chatUnread, setChatUnread] = useState({});
   const [chatLastSeen, setChatLastSeen] = useState({}); // eventId -> ISO string
 
-  useEffect(() => { loadEvents(); }, []);
+  useEffect(() => { loadEvents(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const teamEntries = Object.entries(teamInfo);

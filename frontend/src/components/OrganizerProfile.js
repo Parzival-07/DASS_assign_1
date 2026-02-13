@@ -16,7 +16,7 @@ function OrganizerProfile({ token }) {
 
   useEffect(() => {
     loadProfile();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadProfile = async () => {
     try {

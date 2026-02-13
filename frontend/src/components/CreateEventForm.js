@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { createEvent } from '../services/api';
 
 function CreateEventForm({ token, onSuccess }) {

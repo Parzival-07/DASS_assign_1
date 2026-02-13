@@ -36,7 +36,7 @@ function EventDetails({ token, eventId, onBack, user }) {
   const [chatUnread, setChatUnread] = useState(0);
   const [chatLastSeen, setChatLastSeen] = useState(new Date().toISOString());
 
-  useEffect(() => { loadEvent(); }, [eventId]);
+  useEffect(() => { loadEvent(); }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!myTeam || showChat) { setChatUnread(0); return; }

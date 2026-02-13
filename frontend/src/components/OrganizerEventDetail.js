@@ -24,7 +24,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
 
   useEffect(() => {
     loadEventDetail();
-  }, [eventId]);
+  }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadEventDetail = async () => {
     setLoading(true);
@@ -79,7 +79,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
   useEffect(() => {
     if (tab === 'participants') loadParticipants();
     if (tab === 'scanner') loadAttendanceStats();
-  }, [search, filterStatus, filterAttendance, tab]);
+  }, [search, filterStatus, filterAttendance, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAttendanceStats = async () => {
     try {

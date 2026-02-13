@@ -21,7 +21,7 @@ function OrganizerDashboard({ user, token, logout }) {
     if (page === 'dashboard') loadDashboard();
     if (page === 'ongoing') loadOngoing();
     if (page === 'password-reset') loadResetRequests();
-  }, [page]);
+  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadResetRequests = async () => {
     try {

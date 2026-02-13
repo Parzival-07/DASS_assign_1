@@ -25,7 +25,7 @@ function ProfilePage({ token, user, onBack, refreshUser }) {
   useEffect(() => {
     loadProfile();
     loadPreferencesData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadProfile = async () => {
     try {

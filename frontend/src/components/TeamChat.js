@@ -8,8 +8,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
   const [sending, setSending] = useState(false);
   const [onlineStatus, setOnlineStatus] = useState({});
   const [typingUsers, setTypingUsers] = useState([]);
-  const [teamName, setTeamName] = useState([]);
-  const [unreadCount] = useState(0);
+  const [teamName, setTeamName] = useState('');
 
   const messagesEndRef = useRef(null);
   const pollRef = useRef(null);
@@ -38,7 +37,6 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
             const existingIds = new Set(prev.map(m => m._id));
             const newMsgs = data.messages.filter(m => !existingIds.has(m._id));
             if (newMsgs.length > 0) {
-              setUnreadCount(c => c + newMsgs.filter(m => m.userId?._id !== user.id).length);
               return [...prev, ...newMsgs];
             }
             return prev;
@@ -53,7 +51,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
     } catch (err) {
       console.error('Error loading messages:', err);
     }
-  }, [teamId, token, user.id]);
+  }, [teamId, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     loadMessages();

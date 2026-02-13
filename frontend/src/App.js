@@ -23,7 +23,7 @@ function App() {
     if (token) {
       loadUser();
     }
-  }, [token]);
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadUser = () => {
     verifyToken(token)
