@@ -6,8 +6,6 @@ function TicketView({ token, ticketId, onBack }) {
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { loadTicket(); }, [ticketId]);
-
   const loadTicket = async () => {
     try {
       const res = await fetch(`${API_URL}/registration/ticket/${ticketId}`, {
@@ -18,6 +16,10 @@ function TicketView({ token, ticketId, onBack }) {
       setLoading(false);
     } catch (err) {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadTicket(); }, [ticketId, token]);
     }
   };
 

@@ -8,9 +8,8 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
   const [sending, setSending] = useState(false);
   const [onlineStatus, setOnlineStatus] = useState({});
   const [typingUsers, setTypingUsers] = useState([]);
-  const [teamName, setTeamName] = useState('');
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [lastSeen, setLastSeen] = useState(null);
+  const [teamName, setTeamName] = useState([]);
+  const [unreadCount] = useState(0);
 
   const messagesEndRef = useRef(null);
   const pollRef = useRef(null);
@@ -58,7 +57,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
 
   useEffect(() => {
     loadMessages();
-  }, [teamId]);
+  }, [teamId, loadMessages]);
 
   useEffect(() => {
     scrollToBottom();
