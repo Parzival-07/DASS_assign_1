@@ -3,7 +3,7 @@ import CreateEventForm from './CreateEventForm';
 import OrganizerEventDetail from './OrganizerEventDetail';
 import OrganizerProfile from './OrganizerProfile';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function OrganizerDashboard({ user, token, logout }) {
   const [page, setPage] = useState('dashboard');

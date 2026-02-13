@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import QRScanner from './QRScanner';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function OrganizerEventDetail({ token, eventId, onBack }) {
   const [event, setEvent] = useState(null);

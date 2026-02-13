@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getUserProfile, updateProfile, setPreferences, getInterestAreas, getOrganizersToFollow } from '../services/api';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function ProfilePage({ token, user, onBack, refreshUser }) {
   const [profile, setProfile] = useState(null);
