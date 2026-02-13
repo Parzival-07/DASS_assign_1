@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { setPreferences, skipOnboarding, getInterestAreas, getOrganizersToFollow } from '../services/api';
 
 function OnboardingForm({ token, onComplete }) {
-  const [step, setStep] = useState(1); // Step 1: Interests, Step 2: Clubs
+  const [step, setStep] = useState(1);
   const [interestAreas, setInterestAreas] = useState([]);
   const [organizers, setOrganizers] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);

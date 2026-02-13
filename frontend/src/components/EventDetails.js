@@ -23,7 +23,6 @@ function EventDetails({ token, eventId, onBack, user }) {
   const [uploadingField, setUploadingField] = useState(null);
   const [teamName, setTeamName] = useState('');
 
-  // Team-based event state
   const [myTeam, setMyTeam] = useState(null);
   const [teamLoading, setTeamLoading] = useState(false);
   const [createTeamName, setCreateTeamName] = useState('');
@@ -120,10 +119,9 @@ function EventDetails({ token, eventId, onBack, user }) {
       if (data.team) {
         setMyTeam(data.team);
         if (data.teamComplete) {
-          // Team just completed — show celebration view
           if (data.tickets) setTeamTickets(data.tickets);
           setTeamJustCompleted(true);
-          loadEvent(); // Refresh event spots
+          loadEvent();
         } else {
           setMessage(data.message || 'Joined team successfully!');
         }
@@ -161,7 +159,7 @@ function EventDetails({ token, eventId, onBack, user }) {
         setMessage(data.message);
         setMyTeam(null);
         setTeamTickets([]);
-        loadEvent(); // Refresh spots/counts
+        loadEvent();
       } else {
         setMessage(data.message || 'Failed to leave team');
       }
@@ -170,7 +168,6 @@ function EventDetails({ token, eventId, onBack, user }) {
     }
   };
 
-  // Handle file upload for custom form fields
   const handleFileUpload = async (fieldName, file) => {
     if (!file) return;
     setUploadingField(fieldName);
@@ -243,7 +240,7 @@ function EventDetails({ token, eventId, onBack, user }) {
       const data = await res.json();
       if (data.registration) {
         setMessage(`Registered! Ticket ID: ${data.registration.ticketId}`);
-        setRegisteredTicketId(data.registration.ticketId); // Store ticketId to show QR
+        setRegisteredTicketId(data.registration.ticketId);
       } else {
         setMessage(`${data.message}`);
       }
@@ -504,7 +501,6 @@ function EventDetails({ token, eventId, onBack, user }) {
           <h4 className="mt-0 mb-4">Team Registration (Min: {event.minTeamSize}, Max: {event.maxTeamSize} members)</h4>
           
           {teamLoading ? <p>Loading team info...</p> : myTeam ? (
-            // ========== TEAM MANAGEMENT DASHBOARD ==========
             <div className="bg-white p-5 border border-gray-300 rounded-lg">
               <div className="flex justify-between items-center mb-4">
                 <h4 className="m-0">{myTeam.teamName}</h4>
@@ -513,7 +509,6 @@ function EventDetails({ token, eventId, onBack, user }) {
                 </span>
               </div>
 
-              {/* Progress Bar */}
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-500 mb-1">
                   <span>Team Progress</span>
@@ -527,7 +522,6 @@ function EventDetails({ token, eventId, onBack, user }) {
                 </div>
               </div>
               
-              {/* Invite Code Section (only when forming) */}
               {myTeam.status === 'forming' && (
                 <div className="bg-yellow-100 p-3 mb-4 rounded-md border border-yellow-500">
                   <div className="flex items-center justify-between">
@@ -544,13 +538,11 @@ function EventDetails({ token, eventId, onBack, user }) {
                 </div>
               )}
 
-              {/* Invite Tracking — Member List */}
               <div className="mb-4">
                 <h5 className="mt-0 mb-2 text-sm text-gray-800">Members ({myTeam.members?.length}/{myTeam.maxSize})</h5>
                 {myTeam.members?.map((m, i) => {
                   const isLeader = m._id === myTeam.leaderId?._id;
                   const isYou = m._id === user.id || m.email === user.email;
-                  // Find this member's ticket if team is complete
                   const memberTicket = teamTickets.find(t => t.userId?._id === m._id || t.userId?.email === m.email);
                   return (
                     <div key={i} className={`flex items-center justify-between px-3 py-2.5 my-1.5 rounded-md ${isYou ? 'bg-green-50 border border-green-300' : 'bg-gray-100 border border-gray-200'}`}>
@@ -572,7 +564,6 @@ function EventDetails({ token, eventId, onBack, user }) {
                   );
                 })}
 
-                {/* Remaining spots indicator */}
                 {myTeam.status === 'forming' && Array.from({ length: myTeam.maxSize - (myTeam.members?.length || 0) }).map((_, i) => (
                   <div key={`empty-${i}`} className="flex items-center px-3 py-2.5 my-1.5 bg-white border border-dashed border-gray-300 rounded-md text-gray-400">
                     <span>⏳ Waiting for member...</span>
@@ -580,7 +571,6 @@ function EventDetails({ token, eventId, onBack, user }) {
                 ))}
               </div>
 
-              {/* Complete team — ticket summary */}
               {myTeam.status === 'complete' && (
                 <div className="bg-green-100 p-3 rounded-md border border-green-300 mb-4">
                   <p className="m-0 text-green-800 text-sm">
@@ -589,7 +579,6 @@ function EventDetails({ token, eventId, onBack, user }) {
                 </div>
               )}
 
-              {/* Team Chat Toggle */}
               <button
                 onClick={() => {
                   if (!showChat) { setChatUnread(0); setChatLastSeen(new Date().toISOString()); }
@@ -604,7 +593,6 @@ function EventDetails({ token, eventId, onBack, user }) {
                 )}
               </button>
 
-              {/* Team Chat Panel */}
               {showChat && (
                 <div className="mb-4">
                   <TeamChat
@@ -617,7 +605,6 @@ function EventDetails({ token, eventId, onBack, user }) {
                 </div>
               )}
 
-              {/* Leave/Disband button — available for both forming and complete teams */}
               <button onClick={handleLeaveTeam} className="btn-danger mt-1">
                 {myTeam.leaderId?._id === user.id
                   ? (myTeam.status === 'complete' ? 'Disband Team (Cancels All Registrations)' : 'Disband Team')
@@ -625,7 +612,6 @@ function EventDetails({ token, eventId, onBack, user }) {
               </button>
             </div>
           ) : (
-            // ========== CREATE OR JOIN TEAM ==========
             <>
               {deadlinePassed ? (
                 <p className="text-red-600">Registration deadline has passed</p>
@@ -654,7 +640,6 @@ function EventDetails({ token, eventId, onBack, user }) {
           )}
         </div>
       ) : (
-        // Normal individual registration
         <>
           <input type="text" placeholder="Team Name (optional)" value={teamName} onChange={(e) => setTeamName(e.target.value)} />
 

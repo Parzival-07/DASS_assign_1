@@ -112,7 +112,6 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
   const saveEdit = async () => {
     try {
       let payload = { ...editData };
-      // For draft events, convert comma-separated strings to arrays and build itemDetails
       if (event.status === 'draft') {
         payload.eventTags = editData.eventTags ? editData.eventTags.split(',').map(t => t.trim()).filter(t => t) : [];
         if (event.eventType === 'merchandise') {
@@ -151,7 +150,6 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ attendance: !current })
       });
-      // Refresh both participants list and analytics counts
       await Promise.all([
         loadParticipants(),
         loadEventDetail()

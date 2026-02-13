@@ -106,7 +106,6 @@ function OrganizerDashboard({ user, token, logout }) {
     setPage('event-detail');
   };
 
-  // Navigation
   const Navbar = () => (
     <div className="flex items-center gap-2 flex-wrap bg-white border-b border-gray-200 px-4 py-3 mb-5 rounded-lg">
       <strong className="mr-5">{user.organizationName}</strong>
@@ -132,7 +131,6 @@ function OrganizerDashboard({ user, token, logout }) {
     );
   }
 
-  // Password Reset Page
   if (page === 'password-reset') {
     return (
       <div className="container">
@@ -164,7 +162,7 @@ function OrganizerDashboard({ user, token, logout }) {
           <div className={`p-2 my-2 rounded ${resetMessage.includes('submitted') || resetMessage.includes('success') ? 'bg-green-100' : 'bg-red-100'}`}>{resetMessage}</div>
         )}
 
-        {/* Request History */}
+
         <h3 className="mt-6">Request History</h3>
         {resetRequests.length === 0 ? (
           <p className="text-gray-500">No password reset requests yet.</p>

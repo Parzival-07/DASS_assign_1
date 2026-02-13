@@ -22,7 +22,7 @@ function RegisterForm() {
     if (type === 'student') {
       setStep(2);
     } else {
-      setStep(3); // Go to step 3 for admin/organizer
+      setStep(3);
     }
   };
 

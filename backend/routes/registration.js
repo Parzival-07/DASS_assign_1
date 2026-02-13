@@ -127,25 +127,21 @@ router.post('/register', authenticateToken, async (req, res) => {
 
     const user = await User.findById(userId).select('email firstName lastName');
     
-    try {
-      await sendTicketEmail(user.email, {
-        userName: `${user.firstName} ${user.lastName}`,
-        eventName: event.eventName,
-        ticketId: registration.ticketId,
-        eventDate: event.eventStartDate,
-        eventType: event.eventType,
-        eventId: event._id,
-        userId: userId,
-        teamName,
-        selectedSize,
-        selectedColor,
-        selectedVariant,
-        quantity: quantity || 1
-      });
-      console.log(`Ticket email sent to ${user.email}`);
-    } catch (emailError) {
-      console.error('Email sending failed:', emailError.message);
-    }
+    sendTicketEmail(user.email, {
+      userName: `${user.firstName} ${user.lastName}`,
+      eventName: event.eventName,
+      ticketId: registration.ticketId,
+      eventDate: event.eventStartDate,
+      eventType: event.eventType,
+      eventId: event._id,
+      userId: userId,
+      teamName,
+      selectedSize,
+      selectedColor,
+      selectedVariant,
+      quantity: quantity || 1
+    }).then(() => console.log(`Ticket email sent to ${user.email}`))
+      .catch(err => console.error('Email sending failed:', err.message));
 
     res.status(201).json({
       message: 'Registration successful! Check your email for ticket details.',

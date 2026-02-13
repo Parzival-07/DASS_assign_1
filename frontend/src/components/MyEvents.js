@@ -11,7 +11,7 @@ function MyEvents({ token, user, onViewTicket }) {
   const [expandedEvents, setExpandedEvents] = useState({});
   const [showChat, setShowChat] = useState({});
   const [chatUnread, setChatUnread] = useState({});
-  const [chatLastSeen, setChatLastSeen] = useState({}); // eventId -> ISO string
+  const [chatLastSeen, setChatLastSeen] = useState({});
 
   useEffect(() => { loadEvents(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -78,7 +78,7 @@ function MyEvents({ token, user, onViewTicket }) {
       const data = await res.json();
       if (res.ok) {
         alert(data.message || 'Registration cancelled successfully');
-        loadEvents(); // Refresh the list
+        loadEvents();
       } else {
         alert(data.message || 'Failed to cancel');
       }
@@ -162,7 +162,6 @@ function MyEvents({ token, user, onViewTicket }) {
               </div>
             )}
 
-            {/* Expanded Team Dashboard */}
             {expandedEvents[reg.eventId._id] && (
               <div className="mt-4 p-4 bg-white rounded-md border border-gray-300">
                 <div className="mb-4">

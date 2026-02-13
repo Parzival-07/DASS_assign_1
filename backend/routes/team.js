@@ -149,20 +149,16 @@ router.post('/join', authenticateToken, async (req, res) => {
         await registration.save();
         newRegCount++;
 
-        try {
-          await sendTicketEmail(member.email, {
-            userName: `${member.firstName} ${member.lastName}`,
-            eventName: event.eventName,
-            ticketId,
-            eventDate: event.eventStartDate,
-            eventType: event.eventType,
-            eventId: event._id,
-            userId: memberId,
-            teamName: team.teamName
-          });
-        } catch (emailErr) {
-          console.error(`Email failed for ${member.email}:`, emailErr.message);
-        }
+        sendTicketEmail(member.email, {
+          userName: `${member.firstName} ${member.lastName}`,
+          eventName: event.eventName,
+          ticketId,
+          eventDate: event.eventStartDate,
+          eventType: event.eventType,
+          eventId: event._id,
+          userId: memberId,
+          teamName: team.teamName
+        }).catch(err => console.error(`Email failed for ${member.email}:`, err.message));
       }
 
       if (newRegCount > 0) {

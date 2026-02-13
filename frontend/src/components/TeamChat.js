@@ -82,7 +82,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ teamId })
         });
-      } catch (e) { /* ignore */ }
+      } catch (e) {}
     };
     sendHeartbeat();
     heartbeatRef.current = setInterval(sendHeartbeat, 15000);
@@ -306,7 +306,6 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
         </div>
       )}
 
-      {/* Message Input */}
       <div className="p-3 bg-white border-t border-gray-300 flex gap-2 items-center">
         <input
           ref={fileInputRef}

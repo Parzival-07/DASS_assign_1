@@ -8,7 +8,6 @@ function AdminDashboard({ user, logout, token }) {
   const [stats, setStats] = useState({});
   const [showArchived, setShowArchived] = useState(false);
   
-  // Create organizer form
   const [orgName, setOrgName] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
@@ -17,12 +16,10 @@ function AdminDashboard({ user, logout, token }) {
   const [autoGenerate, setAutoGenerate] = useState(true);
   const [generatedCredentials, setGeneratedCredentials] = useState(null);
   
-  // Password reset
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
-  // Reset requests from organizers
   const [resetRequests, setResetRequests] = useState([]);
   const [resetFilter, setResetFilter] = useState('pending');
   const [approveComment, setApproveComment] = useState('');
@@ -258,7 +255,6 @@ function AdminDashboard({ user, logout, token }) {
     setSuccess('Copied to clipboard!');
   };
 
-  // Navigation
   const Navbar = () => (
     <div className="flex items-center gap-2 flex-wrap bg-white border-b border-gray-200 px-4 py-3 mb-5 rounded-lg">
       <strong className="mr-5">Admin Panel</strong>
@@ -277,7 +273,6 @@ function AdminDashboard({ user, logout, token }) {
       {error && <div className="error">{error}</div>}
       {success && <div className="success">{success}</div>}
 
-      {/* Dashboard Page */}
       {page === 'dashboard' && (
         <>
           <h2>Dashboard</h2>
@@ -309,7 +304,7 @@ function AdminDashboard({ user, logout, token }) {
         </>
       )}
 
-      {/* Manage Organizers Page */}
+
       {page === 'organizers' && (
         <>
           <h2>Add New Club/Organizer</h2>
@@ -342,7 +337,6 @@ function AdminDashboard({ user, logout, token }) {
             <button type="submit" className="btn-success">Create Organizer</button>
           </form>
 
-          {/* Show generated credentials */}
           {generatedCredentials && (
             <div className="bg-green-100 p-4 my-4 border border-green-500 rounded-md">
               <h4 className="mt-0 mb-2.5">Generated Credentials (Share with organizer)</h4>
@@ -404,7 +398,6 @@ function AdminDashboard({ user, logout, token }) {
         </>
       )}
 
-      {/* Password Reset Page */}
       {page === 'password' && (
         <>
           <h2>Reset User Password</h2>
@@ -425,13 +418,11 @@ function AdminDashboard({ user, logout, token }) {
         </>
       )}
 
-      {/* Organizer Password Reset Requests Page */}
       {page === 'reset-requests' && (
         <>
           <h2>Organizer Password Reset Requests</h2>
           <p className="text-gray-500">Organizers request password resets here. Approve to auto-generate a new password.</p>
 
-          {/* Generated password display */}
           {generatedResetPassword && (
             <div className="bg-green-100 p-4 my-4 border border-green-600 rounded-md">
               <h4 className="mt-0 mb-2.5">New Password Generated</h4>
@@ -444,7 +435,6 @@ function AdminDashboard({ user, logout, token }) {
             </div>
           )}
 
-          {/* Filter tabs */}
           <div className="flex gap-2 my-4">
             {['pending', 'approved', 'rejected'].map(f => (
               <button key={f} onClick={() => setResetFilter(f)}
@@ -484,7 +474,6 @@ function AdminDashboard({ user, logout, token }) {
                   </p>
                 )}
 
-                {/* Approve/Reject actions for pending requests */}
                 {r.status === 'pending' && (
                   <div className="mt-3 p-3 bg-gray-100 rounded">
                     <div className="mb-2.5">
