@@ -101,6 +101,18 @@ function OrganizerDashboard({ user, token, logout }) {
     return classes[status] || 'bg-gray-500';
   };
 
+  const getComputedStatus = (ev) => {
+    if (!ev) return 'draft';
+    const stored = ev.status;
+    if (stored === 'draft' || stored === 'closed' || stored === 'completed') return stored;
+    const now = new Date();
+    const start = new Date(ev.eventStartDate);
+    const end = new Date(ev.eventEndDate);
+    if (now > end) return 'completed';
+    if (now >= start && now <= end) return 'ongoing';
+    return stored;
+  };
+
   const openEventDetail = (eventId) => {
     setSelectedEventId(eventId);
     setPage('event-detail');
@@ -122,10 +134,10 @@ function OrganizerDashboard({ user, token, logout }) {
     return (
       <div className="container">
         <Navbar />
-        <OrganizerEventDetail 
-          token={token} 
-          eventId={selectedEventId} 
-          onBack={() => { setPage('dashboard'); setSelectedEventId(null); loadDashboard(); }} 
+        <OrganizerEventDetail
+          token={token}
+          eventId={selectedEventId}
+          onBack={() => { setPage('dashboard'); setSelectedEventId(null); loadDashboard(); }}
         />
       </div>
     );
@@ -216,8 +228,8 @@ function OrganizerDashboard({ user, token, logout }) {
                   <h4 className="m-0">{event.eventName}</h4>
                   <span className="text-gray-500">{event.eventType}</span>
                 </div>
-                <span className={`${getStatusClass(event.status)} text-white px-2 py-0.5 rounded text-xs`}>
-                  {event.status.toUpperCase()}
+                <span className={`${getStatusClass(getComputedStatus(event))} text-white px-2 py-0.5 rounded text-xs`}>
+                  {getComputedStatus(event).toUpperCase()}
                 </span>
               </div>
               <p className="mt-2"><strong>Registrations:</strong> {event.currentRegistrations}/{event.registrationLimit}</p>
@@ -231,9 +243,9 @@ function OrganizerDashboard({ user, token, logout }) {
   return (
     <div className="container">
       <Navbar />
-      
+
       <h2>Dashboard</h2>
-      
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div className="stat-card bg-blue-100">
           <h3 className="m-0">{analytics.totalEvents || 0}</h3>
@@ -264,8 +276,8 @@ function OrganizerDashboard({ user, token, logout }) {
             <div key={event._id} className="border border-gray-300 p-4 bg-white rounded-md">
               <div className="flex justify-between items-start mb-2">
                 <h4 className="m-0">{event.eventName}</h4>
-                <span className={`${getStatusClass(event.status)} text-white px-2 py-0.5 rounded text-xs`}>
-                  {event.status?.toUpperCase() || 'DRAFT'}
+                <span className={`${getStatusClass(getComputedStatus(event))} text-white px-2 py-0.5 rounded text-xs`}>
+                  {getComputedStatus(event)?.toUpperCase() || 'DRAFT'}
                 </span>
               </div>
               <p className="text-gray-500 my-1">{event.eventType}</p>

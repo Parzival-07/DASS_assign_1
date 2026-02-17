@@ -120,7 +120,7 @@ router.get('/event/:id', authenticateToken, isOrganizer, async (req, res) => {
 
 router.get('/event/:id/participants', authenticateToken, isOrganizer, async (req, res) => {
   try {
-    const { search, status, attendance } = req.query;
+    const { search, status, attendance, institution } = req.query;
     const event = await Event.findOne({ _id: req.params.id, organizerId: req.user.id });
     if (!event) return res.status(404).json({ message: 'Event not found' });
     
@@ -129,8 +129,16 @@ router.get('/event/:id/participants', authenticateToken, isOrganizer, async (req
     if (attendance !== undefined) query.attendance = attendance === 'true';
     
     let registrations = await Registration.find(query)
-      .populate('userId', 'firstName lastName email contactNumber');
+      .populate('userId', 'firstName lastName email contactNumber role');
     
+    if (institution) {
+      registrations = registrations.filter(r => {
+        if (institution === 'iiit') return r.userId?.role === 'iiit-student';
+        if (institution === 'non-iiit') return r.userId?.role === 'non-iiit-student';
+        return true;
+      });
+    }
+
     if (search) {
       const s = search.toLowerCase();
       registrations = registrations.filter(r => 

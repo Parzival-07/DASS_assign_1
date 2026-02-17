@@ -10,16 +10,17 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
   const [tab, setTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  
+
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterAttendance, setFilterAttendance] = useState('');
-  
+  const [filterInstitution, setFilterInstitution] = useState('');
+
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({});
-  
+
   const [customForm, setCustomForm] = useState([]);
-  
+
   const [attendanceStats, setAttendanceStats] = useState(null);
 
   useEffect(() => {
@@ -64,8 +65,9 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
       let url = `${API_URL}/organizer/event/${eventId}/participants?`;
       if (search) url += `search=${search}&`;
       if (filterStatus) url += `status=${filterStatus}&`;
-      if (filterAttendance) url += `attendance=${filterAttendance}`;
-      
+      if (filterAttendance) url += `attendance=${filterAttendance}&`;
+      if (filterInstitution) url += `institution=${filterInstitution}`;
+
       const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -79,7 +81,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
   useEffect(() => {
     if (tab === 'participants') loadParticipants();
     if (tab === 'scanner') loadAttendanceStats();
-  }, [search, filterStatus, filterAttendance, tab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [search, filterStatus, filterAttendance, filterInstitution, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAttendanceStats = async () => {
     try {
@@ -172,7 +174,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
       p.attendanceMethod || '-',
       p.status
     ]);
-    
+
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -262,37 +264,51 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
 
   const canEdit = event.status === 'draft' || event.status === 'published';
 
+  const getComputedStatus = (ev) => {
+    if (!ev) return 'draft';
+    const stored = ev.status;
+    if (stored === 'draft' || stored === 'closed' || stored === 'completed') return stored;
+    const now = new Date();
+    const start = new Date(ev.eventStartDate);
+    const end = new Date(ev.eventEndDate);
+    if (now > end) return 'completed';
+    if (now >= start && now <= end) return 'ongoing';
+    return stored;
+  };
+
+  const displayStatus = getComputedStatus(event);
+
   return (
     <div>
       <button onClick={onBack} className="btn-secondary mb-4">← Back</button>
-      
+
       {message && <div className={message.includes('Error') ? 'error' : 'success'}>{message}</div>}
-      
+
       <div className="flex justify-between items-center mb-5">
         <div>
           <h2 className="m-0">{event.eventName}</h2>
           <span className="text-gray-500">{event.eventType}</span>
         </div>
-        <span className={`${getStatusClass(event.status)} text-white px-3 py-1.5 rounded`}>
-          {event.status?.toUpperCase()}
+        <span className={`${getStatusClass(displayStatus)} text-white px-3 py-1.5 rounded`}>
+          {displayStatus?.toUpperCase()}
         </span>
       </div>
 
       <div className="mb-5 flex gap-2.5 flex-wrap">
-        {event.status === 'draft' && <button onClick={() => updateStatus('published')} className="btn-success">Publish</button>}
-        {event.status === 'published' && (
+        {displayStatus === 'draft' && <button onClick={() => updateStatus('published')} className="btn-success">Publish</button>}
+        {displayStatus === 'published' && (
           <>
             <button onClick={() => updateStatus('ongoing')} className="btn-primary">Mark Ongoing</button>
             <button onClick={() => updateStatus('closed')} className="btn-danger">Close Registrations</button>
           </>
         )}
-        {event.status === 'closed' && (
+        {displayStatus === 'closed' && (
           <>
             <button onClick={() => updateStatus('ongoing')} className="btn-primary">Mark Ongoing</button>
             <button onClick={() => updateStatus('completed')} className="btn-success">Mark Completed</button>
           </>
         )}
-        {event.status === 'ongoing' && (
+        {displayStatus === 'ongoing' && (
           <>
             <button onClick={() => updateStatus('completed')} className="btn-success">Mark Completed</button>
             <button onClick={() => updateStatus('closed')} className="btn-danger">Close Event</button>
@@ -301,7 +317,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
       </div>
 
       <div className="mb-5 border-b border-gray-300 flex">
-        {['overview', 'analytics', 'participants', 'scanner', 'form'].filter(t => t !== 'scanner' || event.status === 'ongoing').map(t => (
+        {['overview', 'analytics', 'participants', 'scanner', 'form'].filter(t => t !== 'scanner' || displayStatus === 'ongoing').map(t => (
           <button key={t} onClick={() => setTab(t)} className={`px-5 py-2.5 border-none cursor-pointer text-sm ${tab === t ? 'bg-blue-600 text-white border-b-2 border-blue-600' : 'bg-transparent text-gray-800'}`}>
             {t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
@@ -327,45 +343,45 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
               {event.status === 'draft' && (
                 <>
                   <label>Event Name</label>
-                  <input type="text" value={editData.eventName} onChange={e => setEditData({...editData, eventName: e.target.value})} />
+                  <input type="text" value={editData.eventName} onChange={e => setEditData({ ...editData, eventName: e.target.value })} />
                 </>
               )}
               <label>Description</label>
-              <textarea value={editData.eventDescription} onChange={e => setEditData({...editData, eventDescription: e.target.value})} rows="3" />
+              <textarea value={editData.eventDescription} onChange={e => setEditData({ ...editData, eventDescription: e.target.value })} rows="3" />
               {event.status === 'draft' && (
                 <>
                   <label>Eligibility</label>
-                  <select value={editData.eligibility} onChange={e => setEditData({...editData, eligibility: e.target.value})}>
+                  <select value={editData.eligibility} onChange={e => setEditData({ ...editData, eligibility: e.target.value })}>
                     <option value="">Select Eligibility</option>
                     <option value="All Students">All Students</option>
                     <option value="IIIT Students">IIIT Students</option>
                     <option value="Non-IIIT Students">Non-IIIT Students</option>
                   </select>
                   <label>Registration Deadline</label>
-                  <input type="datetime-local" value={editData.registrationDeadline} onChange={e => setEditData({...editData, registrationDeadline: e.target.value})} />
+                  <input type="datetime-local" value={editData.registrationDeadline} onChange={e => setEditData({ ...editData, registrationDeadline: e.target.value })} />
                   <label>Event Start Date</label>
-                  <input type="datetime-local" value={editData.eventStartDate} onChange={e => setEditData({...editData, eventStartDate: e.target.value})} />
+                  <input type="datetime-local" value={editData.eventStartDate} onChange={e => setEditData({ ...editData, eventStartDate: e.target.value })} />
                   <label>Event End Date</label>
-                  <input type="datetime-local" value={editData.eventEndDate} onChange={e => setEditData({...editData, eventEndDate: e.target.value})} />
+                  <input type="datetime-local" value={editData.eventEndDate} onChange={e => setEditData({ ...editData, eventEndDate: e.target.value })} />
                   <label>Registration Limit</label>
-                  <input type="number" value={editData.registrationLimit} onChange={e => setEditData({...editData, registrationLimit: parseInt(e.target.value)})} />
+                  <input type="number" value={editData.registrationLimit} onChange={e => setEditData({ ...editData, registrationLimit: parseInt(e.target.value) })} />
                   <label>Registration Fee</label>
-                  <input type="number" value={editData.registrationFee} onChange={e => setEditData({...editData, registrationFee: parseFloat(e.target.value)})} />
+                  <input type="number" value={editData.registrationFee} onChange={e => setEditData({ ...editData, registrationFee: parseFloat(e.target.value) })} />
                   <label>Event Tags (comma-separated)</label>
-                  <input type="text" value={editData.eventTags} onChange={e => setEditData({...editData, eventTags: e.target.value})} />
+                  <input type="text" value={editData.eventTags} onChange={e => setEditData({ ...editData, eventTags: e.target.value })} />
                   {event.eventType === 'merchandise' && (
                     <>
                       <h4>Merchandise Details</h4>
                       <label>Sizes (comma-separated)</label>
-                      <input type="text" value={editData.sizes} onChange={e => setEditData({...editData, sizes: e.target.value})} />
+                      <input type="text" value={editData.sizes} onChange={e => setEditData({ ...editData, sizes: e.target.value })} />
                       <label>Colors (comma-separated)</label>
-                      <input type="text" value={editData.colors} onChange={e => setEditData({...editData, colors: e.target.value})} />
+                      <input type="text" value={editData.colors} onChange={e => setEditData({ ...editData, colors: e.target.value })} />
                       <label>Variants (comma-separated)</label>
-                      <input type="text" value={editData.variants} onChange={e => setEditData({...editData, variants: e.target.value})} />
+                      <input type="text" value={editData.variants} onChange={e => setEditData({ ...editData, variants: e.target.value })} />
                       <label>Stock Quantity</label>
-                      <input type="number" value={editData.stockQuantity} onChange={e => setEditData({...editData, stockQuantity: parseInt(e.target.value)})} />
+                      <input type="number" value={editData.stockQuantity} onChange={e => setEditData({ ...editData, stockQuantity: parseInt(e.target.value) })} />
                       <label>Purchase Limit Per Participant</label>
-                      <input type="number" value={editData.purchaseLimitPerParticipant} onChange={e => setEditData({...editData, purchaseLimitPerParticipant: parseInt(e.target.value)})} />
+                      <input type="number" value={editData.purchaseLimitPerParticipant} onChange={e => setEditData({ ...editData, purchaseLimitPerParticipant: parseInt(e.target.value) })} />
                     </>
                   )}
                 </>
@@ -373,9 +389,9 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
               {event.status === 'published' && (
                 <>
                   <label>Registration Deadline (can only extend)</label>
-                  <input type="datetime-local" value={editData.registrationDeadline} onChange={e => setEditData({...editData, registrationDeadline: e.target.value})} />
+                  <input type="datetime-local" value={editData.registrationDeadline} onChange={e => setEditData({ ...editData, registrationDeadline: e.target.value })} />
                   <label>Registration Limit (can only increase)</label>
-                  <input type="number" value={editData.registrationLimit} onChange={e => setEditData({...editData, registrationLimit: parseInt(e.target.value)})} />
+                  <input type="number" value={editData.registrationLimit} onChange={e => setEditData({ ...editData, registrationLimit: parseInt(e.target.value) })} />
                 </>
               )}
               <div className="mt-2.5">
@@ -427,6 +443,11 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
               <option value="">All Attendance</option>
               <option value="true">Present</option>
               <option value="false">Absent</option>
+            </select>
+            <select value={filterInstitution} onChange={e => setFilterInstitution(e.target.value)}>
+              <option value="">All Institutions</option>
+              <option value="iiit">IIIT</option>
+              <option value="non-iiit">Non-IIIT</option>
             </select>
             <button onClick={exportCSV} className="btn-secondary">Export CSV</button>
           </div>
@@ -484,7 +505,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
                   <p className="m-0">Not Yet</p>
                 </div>
               </div>
-              
+
               <div className="bg-gray-200 rounded h-6 mb-5">
                 <div
                   className="bg-green-600 h-full rounded flex items-center justify-center text-white text-xs font-bold"
@@ -493,7 +514,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
                   {attendanceStats.total > 0 ? Math.round(attendanceStats.scanned / attendanceStats.total * 100) : 0}%
                 </div>
               </div>
-              
+
               <button onClick={exportAttendanceCSV} className="btn-secondary mb-4">Export Attendance CSV</button>
               <button onClick={loadAttendanceStats} className="btn-secondary mb-4 ml-2.5">Refresh Stats</button>
             </div>
@@ -588,8 +609,8 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
                     <button onClick={() => removeFormField(index)} className="btn-danger">Remove</button>
                   </div>
                   {(field.fieldType === 'select' || field.fieldType === 'checkbox') && (
-                    <input type="text" placeholder="Options (comma-separated)" value={field.options?.join(',') || ''} 
-                      onChange={e => updateFormField(index, 'options', e.target.value.split(',').map(o => o.trim()))} 
+                    <input type="text" placeholder="Options (comma-separated)" value={field.options?.join(',') || ''}
+                      onChange={e => updateFormField(index, 'options', e.target.value.split(',').map(o => o.trim()))}
                       className="mt-2.5" />
                   )}
                 </div>
