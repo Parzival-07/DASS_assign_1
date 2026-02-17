@@ -12,18 +12,18 @@ function CreateEventForm({ token, onSuccess }) {
   const [registrationLimit, setRegistrationLimit] = useState('');
   const [registrationFee, setRegistrationFee] = useState('');
   const [eventTags, setEventTags] = useState('');
-  
+
   const [sizes, setSizes] = useState('');
   const [colors, setColors] = useState('');
   const [variants, setVariants] = useState('');
   const [stockQuantity, setStockQuantity] = useState('');
   const [purchaseLimit, setPurchaseLimit] = useState('1');
   const [customFormFields, setCustomFormFields] = useState([]);
-  
+
   const [teamBased, setTeamBased] = useState(false);
   const [minTeamSize, setMinTeamSize] = useState(2);
   const [maxTeamSize, setMaxTeamSize] = useState(4);
-  
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -68,7 +68,7 @@ function CreateEventForm({ token, onSuccess }) {
         purchaseLimitPerParticipant: parseInt(purchaseLimit)
       };
     }
-    
+
     if (eventType === 'normal' && customFormFields.length > 0) {
       eventData.customForm = customFormFields;
     }
@@ -100,6 +100,20 @@ function CreateEventForm({ token, onSuccess }) {
     setCustomFormFields(customFormFields.filter((_, i) => i !== index));
   };
 
+  const moveFieldUp = (index) => {
+    if (index === 0) return;
+    const updated = [...customFormFields];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+    setCustomFormFields(updated);
+  };
+
+  const moveFieldDown = (index) => {
+    if (index === customFormFields.length - 1) return;
+    const updated = [...customFormFields];
+    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+    setCustomFormFields(updated);
+  };
+
   const updateCustomField = (index, key, value) => {
     const updated = [...customFormFields];
     updated[index][key] = value;
@@ -122,23 +136,23 @@ function CreateEventForm({ token, onSuccess }) {
 
         <input type="text" placeholder="Event Name" value={eventName} onChange={(e) => setEventName(e.target.value)} required />
         <textarea placeholder="Event Description" value={eventDescription} onChange={(e) => setEventDescription(e.target.value)} required rows="3" />
-        
+
         <select value={eligibility} onChange={(e) => setEligibility(e.target.value)} required>
           <option value="">Select Eligibility</option>
           <option value="All Students">All Students</option>
           <option value="IIIT Students">IIIT Students</option>
           <option value="Non-IIIT Students">Non-IIIT Students</option>
         </select>
-        
+
         <label>Registration Deadline</label>
         <input type="datetime-local" value={registrationDeadline} onChange={(e) => setRegistrationDeadline(e.target.value)} required />
-        
+
         <label>Event Start Date</label>
         <input type="datetime-local" value={eventStartDate} onChange={(e) => setEventStartDate(e.target.value)} required />
-        
+
         <label>Event End Date</label>
         <input type="datetime-local" value={eventEndDate} onChange={(e) => setEventEndDate(e.target.value)} required />
-        
+
         <input type="number" placeholder="Registration Limit" value={registrationLimit} onChange={(e) => setRegistrationLimit(e.target.value)} required />
         <input type="number" placeholder="Registration Fee" value={registrationFee} onChange={(e) => setRegistrationFee(e.target.value)} required />
         <input type="text" placeholder="Event Tags (comma-separated)" value={eventTags} onChange={(e) => setEventTags(e.target.value)} />
@@ -190,7 +204,11 @@ function CreateEventForm({ token, onSuccess }) {
                   <input type="text" placeholder="Options (comma-separated)" value={field.options?.join(',') || ''} onChange={(e) => updateCustomField(index, 'options', e.target.value.split(',').map(o => o.trim()))} />
                 )}
                 <label><input type="checkbox" checked={field.required} onChange={(e) => updateCustomField(index, 'required', e.target.checked)} /> Required</label>
-                <button type="button" onClick={() => removeCustomField(index)} className="btn-danger">Remove Field</button>
+                <div className="flex gap-1 mt-1">
+                  <button type="button" onClick={() => moveFieldUp(index)} disabled={index === 0} className="btn-secondary px-2 py-0.5 text-sm">↑</button>
+                  <button type="button" onClick={() => moveFieldDown(index)} disabled={index === customFormFields.length - 1} className="btn-secondary px-2 py-0.5 text-sm">↓</button>
+                  <button type="button" onClick={() => removeCustomField(index)} className="btn-danger px-2 py-0.5 text-sm">Remove</button>
+                </div>
               </div>
             ))}
             <button type="button" onClick={addCustomField} className="btn-secondary">Add Form Field</button>

@@ -5,15 +5,22 @@ const Registration = require('../models/Registration');
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 
+const buildFuzzyRegex = (str) => {
+  const escaped = str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return escaped.split('').join('.{0,2}');
+};
+
 router.get('/events', authenticateToken, async (req, res) => {
   try {
     const { search, eventType, eligibility, startDate, endDate, followedOnly, matchingInterests } = req.query;
-    let query = { status: { $in: ['published', 'ongoing'] } }; 
+    let query = { status: { $in: ['published', 'ongoing'] } };
 
     if (search) {
+      const fuzzyPattern = buildFuzzyRegex(search);
+
       const organizerMatches = await User.find({
         role: 'organizer',
-        organizationName: { $regex: search, $options: 'i' },
+        organizationName: { $regex: fuzzyPattern, $options: 'i' },
         isArchived: { $ne: true },
         isActive: { $ne: false }
       }).select('_id');
@@ -21,8 +28,8 @@ router.get('/events', authenticateToken, async (req, res) => {
       const organizerIds = organizerMatches.map(o => o._id);
 
       query.$or = [
-        { eventName: { $regex: search, $options: 'i' } },
-        { eventDescription: { $regex: search, $options: 'i' } },
+        { eventName: { $regex: fuzzyPattern, $options: 'i' } },
+        { eventDescription: { $regex: fuzzyPattern, $options: 'i' } },
         ...(organizerIds.length > 0 ? [{ organizerId: { $in: organizerIds } }] : [])
       ];
     }
@@ -53,34 +60,34 @@ router.get('/events', authenticateToken, async (req, res) => {
       const user = await User.findById(req.user.id).select('areasOfInterest');
       if (user?.areasOfInterest?.length > 0) {
         events = events.filter(event => {
-          const matchingTags = event.eventTags?.filter(tag => 
-            user.areasOfInterest.some(interest => 
-              tag.toLowerCase().includes(interest.toLowerCase()) || 
+          const matchingTags = event.eventTags?.filter(tag =>
+            user.areasOfInterest.some(interest =>
+              tag.toLowerCase().includes(interest.toLowerCase()) ||
               interest.toLowerCase().includes(tag.toLowerCase())
             )
           ).length || 0;
-          return matchingTags > 0; 
+          return matchingTags > 0;
         });
-        
+
         events = events.sort((a, b) => {
-          const matchingTagsA = a.eventTags?.filter(tag => 
-            user.areasOfInterest.some(interest => 
-              tag.toLowerCase().includes(interest.toLowerCase()) || 
+          const matchingTagsA = a.eventTags?.filter(tag =>
+            user.areasOfInterest.some(interest =>
+              tag.toLowerCase().includes(interest.toLowerCase()) ||
               interest.toLowerCase().includes(tag.toLowerCase())
             )
           ).length || 0;
-          
-          const matchingTagsB = b.eventTags?.filter(tag => 
-            user.areasOfInterest.some(interest => 
-              tag.toLowerCase().includes(interest.toLowerCase()) || 
+
+          const matchingTagsB = b.eventTags?.filter(tag =>
+            user.areasOfInterest.some(interest =>
+              tag.toLowerCase().includes(interest.toLowerCase()) ||
               interest.toLowerCase().includes(tag.toLowerCase())
             )
           ).length || 0;
-          
+
           if (matchingTagsB !== matchingTagsA) {
             return matchingTagsB - matchingTagsA;
           }
-          
+
           return new Date(b.createdAt) - new Date(a.createdAt);
         });
       }
@@ -95,7 +102,7 @@ router.get('/events', authenticateToken, async (req, res) => {
 router.get('/trending', async (req, res) => {
   try {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    
+
     const trending = await Registration.aggregate([
       { $match: { registeredAt: { $gte: yesterday } } },
       { $group: { _id: '$eventId', count: { $sum: 1 } } },
@@ -108,7 +115,7 @@ router.get('/trending', async (req, res) => {
       .populate('organizerId', 'organizationName category');
 
     const sortedEvents = eventIds.map(id => events.find(e => e._id.toString() === id.toString())).filter(Boolean);
-    
+
     res.json({ trending: sortedEvents });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -120,7 +127,7 @@ router.get('/event/:id', async (req, res) => {
     const event = await Event.findById(req.params.id)
       .populate('organizerId', 'organizationName category description email contactEmail');
     if (!event) return res.status(404).json({ message: 'Event not found' });
-    
+
     if (!['published', 'ongoing'].includes(event.status)) {
       return res.status(404).json({ message: 'Event not found' });
     }
@@ -159,13 +166,13 @@ router.get('/club/:id', async (req, res) => {
     }
 
     const now = new Date();
-    const upcomingEvents = await Event.find({ 
-      organizerId: req.params.id, 
+    const upcomingEvents = await Event.find({
+      organizerId: req.params.id,
       eventEndDate: { $gt: now },
       status: { $in: ['published', 'ongoing'] }
     });
-    const pastEvents = await Event.find({ 
-      organizerId: req.params.id, 
+    const pastEvents = await Event.find({
+      organizerId: req.params.id,
       eventEndDate: { $lte: now },
       status: { $in: ['published', 'ongoing', 'completed', 'closed'] }
     });
@@ -180,7 +187,7 @@ router.post('/club/:id/follow', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     const clubId = req.params.id;
-    
+
     if (user.followingClubs.includes(clubId)) {
       user.followingClubs = user.followingClubs.filter(c => c.toString() !== clubId);
       await user.save();
