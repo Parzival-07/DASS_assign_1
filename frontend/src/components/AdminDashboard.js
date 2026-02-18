@@ -1,13 +1,15 @@
+// admin dashboard component for managing organizers and system settings
 import React, { useState, useEffect } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function AdminDashboard({ user, logout, token }) {
+  // state variables for page navigation and organizer management
   const [page, setPage] = useState('dashboard');
   const [organizers, setOrganizers] = useState([]);
   const [stats, setStats] = useState({});
   const [showArchived, setShowArchived] = useState(false);
-  
+
   const [orgName, setOrgName] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
@@ -15,7 +17,7 @@ function AdminDashboard({ user, logout, token }) {
   const [password, setPassword] = useState('');
   const [autoGenerate, setAutoGenerate] = useState(true);
   const [generatedCredentials, setGeneratedCredentials] = useState(null);
-  
+
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -25,10 +27,11 @@ function AdminDashboard({ user, logout, token }) {
   const [approveComment, setApproveComment] = useState('');
   const [rejectComment, setRejectComment] = useState('');
   const [generatedResetPassword, setGeneratedResetPassword] = useState(null);
-  
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // load data based on which page tab is currently active
   useEffect(() => {
     if (page === 'dashboard') loadStats();
     if (page === 'organizers') loadOrganizers();
@@ -36,6 +39,7 @@ function AdminDashboard({ user, logout, token }) {
     if (page === 'reset-requests') loadResetRequests();
   }, [page, showArchived, resetFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // fetch system statistics from the admin stats endpoint
   const loadStats = async () => {
     try {
       const res = await fetch(`${API_URL}/admin/stats`, {
@@ -85,6 +89,7 @@ function AdminDashboard({ user, logout, token }) {
     }
   };
 
+  // approve a password reset request and generate a new password
   const handleApproveRequest = async (requestId) => {
     setError(''); setSuccess(''); setGeneratedResetPassword(null);
     try {
@@ -129,6 +134,7 @@ function AdminDashboard({ user, logout, token }) {
     }
   };
 
+  // create a new organizer with manual or auto generated credentials
   const handleCreateOrganizer = async (e) => {
     e.preventDefault();
     setError('');
@@ -168,6 +174,7 @@ function AdminDashboard({ user, logout, token }) {
     }
   };
 
+  // toggle active or disabled status of an organizer
   const toggleOrganizerStatus = async (id, currentStatus) => {
     try {
       const res = await fetch(`${API_URL}/admin/organizer/${id}/status`, {
@@ -255,6 +262,7 @@ function AdminDashboard({ user, logout, token }) {
     setSuccess('Copied to clipboard!');
   };
 
+  // navigation bar with tabs for dashboard sections
   const Navbar = () => (
     <div className="flex items-center gap-2 flex-wrap bg-white border-b border-gray-200 px-4 py-3 mb-5 rounded-lg">
       <strong className="mr-5">Admin Panel</strong>
@@ -269,10 +277,11 @@ function AdminDashboard({ user, logout, token }) {
   return (
     <div className="container">
       <Navbar />
-      
+
       {error && <div className="error">{error}</div>}
       {success && <div className="success">{success}</div>}
 
+      {/* dashboard page showing system statistics */}
       {page === 'dashboard' && (
         <>
           <h2>Dashboard</h2>
@@ -298,17 +307,18 @@ function AdminDashboard({ user, logout, token }) {
               <p className="m-0">Total Events</p>
             </div>
           </div>
-          
+
           <p>Welcome, {user.email}</p>
           <p className="text-gray-500">Use the navigation above to manage organizers and reset passwords.</p>
         </>
       )}
 
 
+      {/* organizer management page with create form and list */}
       {page === 'organizers' && (
         <>
           <h2>Add New Club/Organizer</h2>
-          
+
           <form onSubmit={handleCreateOrganizer}>
             <input type="text" placeholder="Organization Name *" value={orgName} onChange={(e) => setOrgName(e.target.value)} required />
             <select value={category} onChange={(e) => setCategory(e.target.value)} required>
@@ -321,26 +331,26 @@ function AdminDashboard({ user, logout, token }) {
               <option value="Other">Other</option>
             </select>
             <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} rows="2" />
-            
+
             <label className="flex items-center gap-2.5 my-2.5">
               <input type="checkbox" checked={autoGenerate} onChange={(e) => setAutoGenerate(e.target.checked)} />
               Auto-generate login credentials
             </label>
-            
+
             {!autoGenerate && (
               <>
                 <input type="email" placeholder="Email *" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 <input type="password" placeholder="Password *" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </>
             )}
-            
+
             <button type="submit" className="btn-success">Create Organizer</button>
           </form>
 
           {generatedCredentials && (
             <div className="bg-green-100 p-4 my-4 border border-green-500 rounded-md">
               <h4 className="mt-0 mb-2.5">Generated Credentials (Share with organizer)</h4>
-              <p><strong>Email:</strong> {generatedCredentials.email} 
+              <p><strong>Email:</strong> {generatedCredentials.email}
                 <button onClick={() => copyToClipboard(generatedCredentials.email)} className="btn-secondary ml-2.5 px-2 py-0.5 text-sm">Copy</button>
               </p>
               <p><strong>Password:</strong> {generatedCredentials.password}
@@ -402,7 +412,7 @@ function AdminDashboard({ user, logout, token }) {
         <>
           <h2>Reset User Password</h2>
           <p className="text-gray-500">Select a user and set a new password for them.</p>
-          
+
           <form onSubmit={handlePasswordReset}>
             <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} required>
               <option value="">Select User</option>
@@ -418,6 +428,7 @@ function AdminDashboard({ user, logout, token }) {
         </>
       )}
 
+      {/* reset requests page for reviewing organizer password reset requests */}
       {page === 'reset-requests' && (
         <>
           <h2>Organizer Password Reset Requests</h2>
@@ -438,11 +449,10 @@ function AdminDashboard({ user, logout, token }) {
           <div className="flex gap-2 my-4">
             {['pending', 'approved', 'rejected'].map(f => (
               <button key={f} onClick={() => setResetFilter(f)}
-                className={`px-4 py-1.5 border-none cursor-pointer rounded ${
-                  resetFilter === f
+                className={`px-4 py-1.5 border-none cursor-pointer rounded ${resetFilter === f
                     ? `${f === 'pending' ? 'bg-yellow-500' : f === 'approved' ? 'bg-green-600' : 'bg-red-600'} text-white font-bold`
                     : 'bg-gray-200 text-gray-800 font-normal'
-                }`}>{f.charAt(0).toUpperCase() + f.slice(1)}</button>
+                  }`}>{f.charAt(0).toUpperCase() + f.slice(1)}</button>
             ))}
           </div>
 
@@ -450,17 +460,15 @@ function AdminDashboard({ user, logout, token }) {
             <p className="text-gray-500">No {resetFilter} requests.</p>
           ) : (
             resetRequests.map((r) => (
-              <div key={r._id} className={`border border-gray-300 p-4 my-2.5 rounded-md border-l-4 ${
-                r.status === 'approved' ? 'border-l-green-600' : r.status === 'rejected' ? 'border-l-red-600' : 'border-l-yellow-500'
-              }`}>
+              <div key={r._id} className={`border border-gray-300 p-4 my-2.5 rounded-md border-l-4 ${r.status === 'approved' ? 'border-l-green-600' : r.status === 'rejected' ? 'border-l-red-600' : 'border-l-yellow-500'
+                }`}>
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="mt-0 mb-1">{r.organizerId?.organizationName || 'Unknown Club'}</h4>
                     <p className="my-0.5 text-gray-500 text-sm">{r.organizerId?.email} • {r.organizerId?.category}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${
-                    r.status === 'approved' ? 'bg-green-600' : r.status === 'rejected' ? 'bg-red-600' : 'bg-yellow-500'
-                  }`}>{r.status.toUpperCase()}</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${r.status === 'approved' ? 'bg-green-600' : r.status === 'rejected' ? 'bg-red-600' : 'bg-yellow-500'
+                    }`}>{r.status.toUpperCase()}</span>
                 </div>
 
                 <p className="mt-2.5 mb-1"><strong>Reason:</strong> {r.reason}</p>

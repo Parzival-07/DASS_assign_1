@@ -1,3 +1,4 @@
+// club detail page showing organization info and their events
 import React, { useState, useEffect } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -12,6 +13,7 @@ function ClubDetail({ token, clubId, onBack, onSelectEvent }) {
 
   useEffect(() => { loadClub(); }, [clubId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // load club details and check follow status for current user
   const loadClub = async () => {
     try {
       const [clubRes, followRes] = await Promise.all([
@@ -20,7 +22,7 @@ function ClubDetail({ token, clubId, onBack, onSelectEvent }) {
       ]);
       const clubData = await clubRes.json();
       const followData = await followRes.json();
-      
+
       setClub(clubData.club);
       setUpcomingEvents(clubData.upcomingEvents || []);
       setPastEvents(clubData.pastEvents || []);
@@ -52,7 +54,7 @@ function ClubDetail({ token, clubId, onBack, onSelectEvent }) {
   return (
     <div>
       <button onClick={onBack} className="btn-secondary mb-4">← Back</button>
-      
+
       <div className="flex justify-between items-start">
         <div>
           <h2>{club.organizationName}</h2>

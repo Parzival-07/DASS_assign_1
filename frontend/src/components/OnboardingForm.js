@@ -1,3 +1,4 @@
+// onboarding form for new users to select interests and follow clubs
 import React, { useState, useEffect } from 'react';
 import { setPreferences, skipOnboarding, getInterestAreas, getOrganizersToFollow } from '../services/api';
 
@@ -14,13 +15,14 @@ function OnboardingForm({ token, onComplete }) {
     loadData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // load available interest areas and clubs list from server
   const loadData = async () => {
     try {
       const [interestsData, organizersData] = await Promise.all([
         getInterestAreas(),
         getOrganizersToFollow(token)
       ]);
-      
+
       if (interestsData.interestAreas) {
         setInterestAreas(interestsData.interestAreas);
       }
@@ -58,6 +60,7 @@ function OnboardingForm({ token, onComplete }) {
     setStep(1);
   };
 
+  // save selected interests and followed clubs to user profile
   const savePreferences = async () => {
     try {
       const data = await setPreferences(token, selectedInterests, selectedClubs);
@@ -93,7 +96,7 @@ function OnboardingForm({ token, onComplete }) {
       <div>
         <h3>Step 1: Select Your Areas of Interest</h3>
         {error && <div className="error">{error}</div>}
-        
+
         <div className="mb-4">
           {interestAreas.map(area => (
             <label key={area} className="block mb-1">
@@ -118,7 +121,7 @@ function OnboardingForm({ token, onComplete }) {
       <div>
         <h3>Step 2: Follow Clubs/Organizers</h3>
         {error && <div className="error">{error}</div>}
-        
+
         <div className="mb-4">
           {organizers.length === 0 ? (
             <p>No clubs available yet</p>

@@ -1,9 +1,11 @@
+// component to display users registered events grouped by status
 import React, { useState, useEffect } from 'react';
 import TeamChat from './TeamChat';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function MyEvents({ token, user, onViewTicket }) {
+  // state for categorized events team info and chat functionality
   const [events, setEvents] = useState({ upcoming: [], completed: [], cancelled: [], normal: [], merchandise: [] });
   const [tab, setTab] = useState('upcoming');
   const [loading, setLoading] = useState(true);
@@ -15,6 +17,7 @@ function MyEvents({ token, user, onViewTicket }) {
 
   useEffect(() => { loadEvents(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // poll for unread chat messages across all team based events
   useEffect(() => {
     const teamEntries = Object.entries(teamInfo);
     if (teamEntries.length === 0) return;
@@ -34,6 +37,7 @@ function MyEvents({ token, user, onViewTicket }) {
     return () => clearInterval(poll);
   }, [teamInfo, showChat, chatLastSeen, token]);
 
+  // load user events and fetch team info for team based registrations
   const loadEvents = async () => {
     try {
       const res = await fetch(`${API_URL}/registration/my-events`, {
@@ -42,7 +46,7 @@ function MyEvents({ token, user, onViewTicket }) {
       const data = await res.json();
       setEvents(data);
       setLoading(false);
-      
+
       const allRegs = [...(data.upcoming || []), ...(data.completed || []), ...(data.normal || []), ...(data.merchandise || [])];
       const teamEventIds = allRegs.filter(r => r.eventId?.teamBased).map(r => r.eventId._id);
       const uniqueIds = [...new Set(teamEventIds)];
@@ -62,6 +66,7 @@ function MyEvents({ token, user, onViewTicket }) {
     }
   };
 
+  // cancel a registration with team aware confirmation prompts
   const cancelRegistration = async (ticketId, isTeamEvent, isLeader) => {
     let confirmMsg = 'Are you sure you want to cancel this registration?';
     if (isTeamEvent && isLeader) {
@@ -89,8 +94,10 @@ function MyEvents({ token, user, onViewTicket }) {
 
   const tabs = ['upcoming', 'normal', 'merchandise', 'completed', 'cancelled'];
 
+  // helper to format date for Google Calendar URL
   const formatGCalDate = (date) => new Date(date).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
+  // generate Google Calendar event creation URL
   const getGoogleCalendarUrl = (ev, tktId) => {
     if (!ev) return '#';
     const start = formatGCalDate(ev.eventStartDate);
@@ -107,6 +114,7 @@ function MyEvents({ token, user, onViewTicket }) {
     return `https://outlook.live.com/calendar/0/action/compose?subject=${encodeURIComponent(ev.eventName)}&startdt=${start}&enddt=${end}&body=${body}`;
   };
 
+  // download ICS calendar file for a registered event
   const downloadICS = async (tktId, evName) => {
     try {
       const res = await fetch(`${API_URL}/registration/calendar/${tktId}`, {
@@ -126,6 +134,7 @@ function MyEvents({ token, user, onViewTicket }) {
     }
   };
 
+  // render a single event card with team info tickets and calendar options
   const renderEvent = (reg) => {
     const team = reg.eventId?.teamBased ? teamInfo[reg.eventId._id] : null;
     return (
@@ -135,7 +144,7 @@ function MyEvents({ token, user, onViewTicket }) {
         <p>Type: {reg.eventType} | Status: <span className={reg.status === 'cancelled' ? 'text-red-600' : 'text-green-600'}>{reg.status}</span></p>
         <p>Organizer: {reg.eventId?.organizerId?.organizationName || 'N/A'}</p>
         {reg.teamName && <p>Team: {reg.teamName}</p>}
-        
+
         {team && (
           <div className={`${team.status === 'cancelled' ? 'bg-red-100' : 'bg-blue-50'} p-3 my-2 rounded-md border border-blue-300`}>
             <div className="flex justify-between items-center">
@@ -152,7 +161,7 @@ function MyEvents({ token, user, onViewTicket }) {
                 {expandedEvents[reg.eventId._id] ? 'Hide Team Dashboard' : 'Show Team Dashboard'}
               </button>
             </div>
-            
+
             {!expandedEvents[reg.eventId._id] && (
               <div className="mt-1.5 text-sm text-gray-600">
                 Members: {team.members?.map(m => `${m.firstName} ${m.lastName}`).join(', ')}
@@ -253,7 +262,7 @@ function MyEvents({ token, user, onViewTicket }) {
             )}
           </div>
         )}
-        
+
         <p>Date: {reg.eventId?.eventStartDate ? new Date(reg.eventId.eventStartDate).toLocaleDateString() : 'N/A'}</p>
         <button onClick={() => onViewTicket(reg.ticketId)} className="btn-primary mt-1 mr-2.5">
           View Ticket: {reg.ticketId}

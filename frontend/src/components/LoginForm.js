@@ -1,3 +1,4 @@
+// login form component handling email and password authentication
 import React, { useState } from 'react';
 import { login } from '../services/api';
 
@@ -28,7 +29,7 @@ function LoginForm({ setToken, setUser }) {
   return (
     <form onSubmit={handleSubmit}>
       {error && <div className="error">{error}</div>}
-      
+
       <input
         type="email"
         placeholder="Email"
@@ -36,7 +37,7 @@ function LoginForm({ setToken, setUser }) {
         onChange={(e) => setEmail(e.target.value)}
         required
       />
-      
+
       <input
         type="password"
         placeholder="Password"
@@ -44,7 +45,7 @@ function LoginForm({ setToken, setUser }) {
         onChange={(e) => setPassword(e.target.value)}
         required
       />
-      
+
       <button type="submit" className="btn-primary w-full">Login</button>
     </form>
   );

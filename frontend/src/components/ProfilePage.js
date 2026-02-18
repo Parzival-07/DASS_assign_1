@@ -1,3 +1,4 @@
+// user profile page for managing personal info preferences and password
 import React, { useState, useEffect } from 'react';
 import { getUserProfile, updateProfile, setPreferences, getInterestAreas, getOrganizersToFollow } from '../services/api';
 
@@ -9,16 +10,16 @@ function ProfilePage({ token, user, onBack, refreshUser }) {
   const [lastName, setLastName] = useState('');
   const [collegeName, setCollegeName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
-  
+
   const [interestAreas, setInterestAreas] = useState([]);
   const [organizers, setOrganizers] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [selectedClubs, setSelectedClubs] = useState([]);
-  
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +28,7 @@ function ProfilePage({ token, user, onBack, refreshUser }) {
     loadPreferencesData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // load user profile data and set form fields with current values
   const loadProfile = async () => {
     try {
       const data = await getUserProfile(token);
@@ -43,6 +45,7 @@ function ProfilePage({ token, user, onBack, refreshUser }) {
     }
   };
 
+  // load available interest areas and organizers for preference selection
   const loadPreferencesData = async () => {
     try {
       const [interestsData, organizersData] = await Promise.all([
@@ -56,6 +59,7 @@ function ProfilePage({ token, user, onBack, refreshUser }) {
     }
   };
 
+  // update user personal information on the server
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     try {
@@ -77,6 +81,7 @@ function ProfilePage({ token, user, onBack, refreshUser }) {
     }
   };
 
+  // change user password with current password verification
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {

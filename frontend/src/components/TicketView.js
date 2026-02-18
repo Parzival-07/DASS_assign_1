@@ -1,3 +1,4 @@
+// ticket view component showing event ticket details and QR code
 import React, { useState, useEffect, useCallback } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -6,6 +7,7 @@ function TicketView({ token, ticketId, onBack }) {
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // fetch ticket data from server by ticket ID
   const loadTicket = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/registration/ticket/${ticketId}`, {
@@ -29,6 +31,7 @@ function TicketView({ token, ticketId, onBack }) {
 
   const formatGCalDate = (date) => new Date(date).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
+  // generate Google Calendar URL with event details and ticket info
   const getGoogleCalendarUrl = () => {
     const ev = ticket.eventId;
     if (!ev) return '#';
@@ -47,6 +50,7 @@ function TicketView({ token, ticketId, onBack }) {
     return `https://outlook.live.com/calendar/0/action/compose?subject=${encodeURIComponent(ev.eventName)}&startdt=${start}&enddt=${end}&body=${body}`;
   };
 
+  // download ICS calendar file from server for the ticket
   const downloadICS = async () => {
     try {
       const res = await fetch(`${API_URL}/registration/calendar/${ticket.ticketId}`, {
@@ -69,27 +73,27 @@ function TicketView({ token, ticketId, onBack }) {
   return (
     <div className="text-center">
       <button onClick={onBack} className="btn-secondary mb-4">← Back</button>
-      
+
       <div className="border-2 border-gray-800 p-5 max-w-md mx-auto bg-white">
         <h2>Event Ticket</h2>
         <hr />
-        
+
         <h3>{ticket.eventId?.eventName}</h3>
         <p><strong>Ticket ID:</strong> {ticket.ticketId}</p>
         <p><strong>Status:</strong> <span className={ticket.status === 'confirmed' ? 'text-green-600' : 'text-red-600'}>{ticket.status.toUpperCase()}</span></p>
-        
+
         <hr />
-        
+
         <p><strong>Participant:</strong> {ticket.userId?.firstName} {ticket.userId?.lastName}</p>
         <p><strong>Email:</strong> {ticket.userId?.email}</p>
-        
+
         {ticket.teamName && <p><strong>Team:</strong> {ticket.teamName}</p>}
-        
+
         <hr />
-        
+
         <p><strong>Event Type:</strong> {ticket.eventType}</p>
         <p><strong>Date:</strong> {new Date(ticket.eventId?.eventStartDate).toLocaleString()}</p>
-        
+
         {ticket.eventType === 'merchandise' && (
           <div>
             {ticket.selectedSize && <p><strong>Size:</strong> {ticket.selectedSize}</p>}
@@ -98,12 +102,12 @@ function TicketView({ token, ticketId, onBack }) {
             <p><strong>Quantity:</strong> {ticket.quantity}</p>
           </div>
         )}
-        
+
         <hr />
-        
+
         <img src={qrUrl} alt="QR Code" className="my-4 inline-block" />
         <p className="text-xs text-gray-500">Scan QR for verification</p>
-        
+
         <p><strong>Registered:</strong> {new Date(ticket.registeredAt).toLocaleString()}</p>
 
         {ticket.status === 'confirmed' && ticket.eventId && (

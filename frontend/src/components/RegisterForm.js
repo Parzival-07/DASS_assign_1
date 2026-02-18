@@ -1,7 +1,9 @@
+// multi step registration form for new student users
 import React, { useState } from 'react';
 import { register } from '../services/api';
 
 function RegisterForm() {
+  // state for multi step form navigation and user input
   const [step, setStep] = useState(1);
   const [userType, setUserType] = useState('');
   const [studentType, setStudentType] = useState(''); // 'iiit', 'non-iiit'
@@ -18,7 +20,7 @@ function RegisterForm() {
     setUserType(type);
     setError('');
     setSuccess('');
-    
+
     if (type === 'student') {
       setStep(2);
     } else {
@@ -49,6 +51,7 @@ function RegisterForm() {
     setSuccess('');
   };
 
+  // submit registration with role based validation and error handling
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -81,6 +84,7 @@ function RegisterForm() {
     }
   };
 
+  // step 1 renders user type selection buttons
   if (step === 1) {
     return (
       <div>
@@ -100,6 +104,7 @@ function RegisterForm() {
     );
   }
 
+  // step 2 asks if student is IIIT or non IIIT
   if (step === 2) {
     return (
       <div>
@@ -119,13 +124,14 @@ function RegisterForm() {
     );
   }
 
+  // step 3 shows registration form or block message for admin and organizer
   if (step === 3) {
     if (userType === 'admin' || userType === 'organizer') {
       return (
         <div>
           <h3>{userType === 'admin' ? 'Admin Account' : 'Organizer Account'}</h3>
           <div className="error">
-            {userType === 'admin' 
+            {userType === 'admin'
               ? 'Admin accounts are provisioned by the backend. No self-registration allowed.'
               : 'Organizer accounts must be created by an Admin. Contact administrator.'}
           </div>
@@ -139,10 +145,10 @@ function RegisterForm() {
     return (
       <div>
         <h3>Step 3: {studentType === 'iiit' ? 'IIIT Student' : 'Non-IIIT Student'} Registration</h3>
-        
+
         {error && <div className="error">{error}</div>}
         {success && <div className="success">{success}</div>}
-        
+
         <form onSubmit={handleSubmit}>
           <input
             type="text"
@@ -151,7 +157,7 @@ function RegisterForm() {
             onChange={(e) => setFirstName(e.target.value)}
             required
           />
-          
+
           <input
             type="text"
             placeholder="Last Name"
@@ -159,7 +165,7 @@ function RegisterForm() {
             onChange={(e) => setLastName(e.target.value)}
             required
           />
-          
+
           <input
             type="email"
             placeholder={studentType === 'iiit' ? 'Email (must end with .iiit.ac.in)' : 'Email'}
@@ -177,7 +183,7 @@ function RegisterForm() {
               required
             />
           )}
-          
+
           <input
             type="tel"
             placeholder="Contact Number"
@@ -185,7 +191,7 @@ function RegisterForm() {
             onChange={(e) => setContactNumber(e.target.value)}
             required
           />
-          
+
           <input
             type="password"
             placeholder="Password"
@@ -193,7 +199,7 @@ function RegisterForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          
+
           <div className="flex gap-2 mt-2">
             <button type="submit" className="btn-success">REGISTER</button>
             <button type="button" onClick={goBack} className="btn-secondary">BACK</button>

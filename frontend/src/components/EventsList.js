@@ -1,3 +1,4 @@
+// simple events list component that fetches and displays all events
 import React, { useState, useEffect } from 'react';
 import { getAllEvents } from '../services/api';
 
@@ -30,7 +31,7 @@ function EventsList({ token }) {
         <p>No events available</p>
       ) : (
         events.map(event => (
-          <div key={event._id} style={{border: '1px solid #ccc', padding: '10px', margin: '10px 0'}}>
+          <div key={event._id} style={{ border: '1px solid #ccc', padding: '10px', margin: '10px 0' }}>
             <h4>{event.eventName}</h4>
             <p><strong>Type:</strong> {event.eventType}</p>
             <p>{event.eventDescription}</p>

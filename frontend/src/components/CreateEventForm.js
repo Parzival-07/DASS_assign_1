@@ -1,7 +1,9 @@
+// form component for organizers to create new events
 import React, { useState } from 'react';
 import { createEvent } from '../services/api';
 
 function CreateEventForm({ token, onSuccess }) {
+  // state for event details and form fields
   const [eventType, setEventType] = useState('normal');
   const [eventName, setEventName] = useState('');
   const [eventDescription, setEventDescription] = useState('');
@@ -27,6 +29,7 @@ function CreateEventForm({ token, onSuccess }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // validate dates and submit event data to the server
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -59,6 +62,7 @@ function CreateEventForm({ token, onSuccess }) {
       status: saveAsDraft ? 'draft' : 'published'
     };
 
+    // add merchandise specific item details if event type is merchandise
     if (eventType === 'merchandise') {
       eventData.itemDetails = {
         sizes: sizes.split(',').map(s => s.trim()).filter(s => s),
@@ -92,6 +96,7 @@ function CreateEventForm({ token, onSuccess }) {
     }
   };
 
+  // add a new blank custom form field to the fields list
   const addCustomField = () => {
     setCustomFormFields([...customFormFields, { fieldName: '', fieldType: 'text', required: false, options: [] }]);
   };
@@ -167,6 +172,7 @@ function CreateEventForm({ token, onSuccess }) {
           </>
         )}
 
+        {/* team based event settings with min and max team size */}
         {eventType === 'normal' && (
           <>
             <div className="my-4 p-4 bg-blue-50 border border-blue-300 rounded-md">

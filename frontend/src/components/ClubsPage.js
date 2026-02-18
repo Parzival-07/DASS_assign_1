@@ -1,3 +1,4 @@
+// clubs listing page with follow and unfollow functionality
 import React, { useState, useEffect } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -14,7 +15,7 @@ function ClubsPage({ token, onSelectClub }) {
       const res = await fetch(`${API_URL}/browse/clubs`);
       const data = await res.json();
       setClubs(data.clubs || []);
-      
+
       const followStatus = {};
       for (const club of data.clubs || []) {
         const fRes = await fetch(`${API_URL}/browse/club/${club._id}/following`, {

@@ -1,3 +1,4 @@
+// organizer dashboard with event management and analytics
 import React, { useState, useEffect } from 'react';
 import CreateEventForm from './CreateEventForm';
 import OrganizerEventDetail from './OrganizerEventDetail';
@@ -6,6 +7,7 @@ import OrganizerProfile from './OrganizerProfile';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function OrganizerDashboard({ user, token, logout }) {
+  // state for page navigation events analytics and password reset
   const [page, setPage] = useState('dashboard');
   const [events, setEvents] = useState([]);
   const [analytics, setAnalytics] = useState({});
@@ -56,6 +58,7 @@ function OrganizerDashboard({ user, token, logout }) {
     }
   };
 
+  // load dashboard data with event list and analytics summary
   const loadDashboard = async () => {
     setLoading(true);
     try {
@@ -83,6 +86,7 @@ function OrganizerDashboard({ user, token, logout }) {
     }
   };
 
+  // delete a draft event after user confirmation
   const handleDeleteEvent = async (id) => {
     if (!window.confirm('Delete this event?')) return;
     try {
@@ -101,6 +105,7 @@ function OrganizerDashboard({ user, token, logout }) {
     return classes[status] || 'bg-gray-500';
   };
 
+  // compute real time status based on event dates for display
   const getComputedStatus = (ev) => {
     if (!ev) return 'draft';
     const stored = ev.status;
@@ -244,6 +249,7 @@ function OrganizerDashboard({ user, token, logout }) {
     <div className="container">
       <Navbar />
 
+      {/* analytics cards showing total events registrations revenue and attendance */}
       <h2>Dashboard</h2>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">

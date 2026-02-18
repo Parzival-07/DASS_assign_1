@@ -1,9 +1,11 @@
+// event details page for viewing event info and registering
 import React, { useState, useEffect } from 'react';
 import TeamChat from './TeamChat';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function EventDetails({ token, eventId, onBack, user }) {
+  // state for event data and registration status
   const [event, setEvent] = useState(null);
   const [spotsLeft, setSpotsLeft] = useState(0);
   const [deadlinePassed, setDeadlinePassed] = useState(false);
@@ -37,6 +39,7 @@ function EventDetails({ token, eventId, onBack, user }) {
 
   useEffect(() => { loadEvent(); }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // poll for unread chat messages when team exists and chat is closed
   useEffect(() => {
     if (!myTeam || showChat) { setChatUnread(0); return; }
     const poll = setInterval(async () => {
@@ -51,6 +54,7 @@ function EventDetails({ token, eventId, onBack, user }) {
     return () => clearInterval(poll);
   }, [myTeam, showChat, chatLastSeen, token]);
 
+  // fetch event details and check if team based event needs team loading
   const loadEvent = async () => {
     try {
       const res = await fetch(`${API_URL}/browse/event/${eventId}`);
@@ -87,6 +91,7 @@ function EventDetails({ token, eventId, onBack, user }) {
     setTeamLoading(false);
   };
 
+  // create a new team for team based event registration
   const handleCreateTeam = async () => {
     setMessage('');
     try {
@@ -107,6 +112,7 @@ function EventDetails({ token, eventId, onBack, user }) {
     }
   };
 
+  // join an existing team using invite code
   const handleJoinTeam = async () => {
     setMessage('');
     try {
@@ -133,20 +139,21 @@ function EventDetails({ token, eventId, onBack, user }) {
     }
   };
 
+  // leave or disband team with appropriate confirmation warnings
   const handleLeaveTeam = async () => {
     const isLeader = myTeam?.leaderId?._id === user.id;
     const isComplete = myTeam?.status === 'complete';
-    
+
     let confirmMsg = isLeader
       ? 'Are you sure you want to disband this team?'
       : 'Are you sure you want to leave this team?';
-    
+
     if (isComplete && isLeader) {
       confirmMsg = 'WARNING: This team is COMPLETE with tickets generated.\n\nDisbanding will CANCEL ALL team members\' registrations.\n\nAre you sure?';
     } else if (isComplete && !isLeader) {
       confirmMsg = 'WARNING: This team is COMPLETE.\n\nLeaving will cancel YOUR registration and the team will need a replacement member.\n\nAre you sure?';
     }
-    
+
     if (!window.confirm(confirmMsg)) return;
     setMessage('');
     try {
@@ -168,6 +175,7 @@ function EventDetails({ token, eventId, onBack, user }) {
     }
   };
 
+  // upload file for custom form field and store the file info
   const handleFileUpload = async (fieldName, file) => {
     if (!file) return;
     setUploadingField(fieldName);
@@ -195,6 +203,7 @@ function EventDetails({ token, eventId, onBack, user }) {
     setUploadingField(null);
   };
 
+  // handle event registration with custom form validation and submission
   const handleRegister = async () => {
     setRegistering(true);
     setMessage('');
@@ -251,6 +260,7 @@ function EventDetails({ token, eventId, onBack, user }) {
     }
   };
 
+  // check if user is eligible to register based on deadline spots and role
   const canRegister = () => {
     if (deadlinePassed) return false;
     if (spotsLeft <= 0) return false;
@@ -263,6 +273,7 @@ function EventDetails({ token, eventId, onBack, user }) {
   if (loading) return <p>Loading...</p>;
   if (!event) return <p>Event not found</p>;
 
+  // show ticket confirmation with QR code after successful registration
   if (registeredTicketId) {
     const qrData = encodeURIComponent(JSON.stringify({ ticketId: registeredTicketId, eventId: event._id, userId: user.id }));
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrData}`;
@@ -270,26 +281,26 @@ function EventDetails({ token, eventId, onBack, user }) {
     return (
       <div className="text-center">
         <button onClick={onBack} className="btn-secondary mb-4">← Back to Events</button>
-        
+
         <div className="border-2 border-gray-800 p-5 max-w-md mx-auto bg-white">
           <h2>Registration Successful!</h2>
           <hr />
-          
+
           <h3>{event.eventName}</h3>
           <p><strong>Ticket ID:</strong> {registeredTicketId}</p>
           <p className="text-green-600"><strong>Status:</strong> CONFIRMED</p>
-          
+
           <hr />
-          
+
           <p><strong>Participant:</strong> {user.firstName} {user.lastName}</p>
           <p><strong>Email:</strong> {user.email}</p>
-          
+
           <hr />
-          
+
           <img src={qrUrl} alt="QR Code" className="my-4" />
           <p className="text-xs text-gray-500">Scan QR for verification</p>
           <p className="text-xs text-gray-500">Ticket details sent to your email</p>
-          
+
           <button onClick={() => setRegisteredTicketId(null)} className="btn-primary mt-4">
             Register for Another Event
           </button>
@@ -298,23 +309,24 @@ function EventDetails({ token, eventId, onBack, user }) {
     );
   }
 
+  // show team completion screen with all member tickets when team is full
   if (teamJustCompleted && myTeam) {
     return (
       <div className="text-center">
         <button onClick={onBack} className="btn-secondary mb-4">← Back to Events</button>
-        
+
         <div className="border-2 border-green-600 p-6 max-w-lg mx-auto bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
           <div className="text-5xl mb-2"></div>
           <h2 className="text-green-600 mt-0 mb-1">Team Complete!</h2>
           <p className="text-base text-gray-500 mb-4">All members have joined — tickets generated for everyone!</p>
-          
+
           <hr className="border-0 border-t border-green-300" />
-          
+
           <h3 className="mt-4 mb-1">{event?.eventName}</h3>
           <p className="m-0"><strong>Team:</strong> {myTeam.teamName} &nbsp;|&nbsp; <strong>Size:</strong> {myTeam.members?.length}/{myTeam.maxSize}</p>
-          
+
           <hr className="border-0 border-t border-green-300" />
-          
+
           <h4 className="mt-4 mb-2">Team Members & Tickets</h4>
           {teamTickets.length > 0 ? (
             <div className="text-left">
@@ -337,11 +349,11 @@ function EventDetails({ token, eventId, onBack, user }) {
           ) : (
             <p className="text-gray-500">Ticket details have been sent to everyone's email.</p>
           )}
-          
+
           <hr className="border-0 border-t border-green-300" />
-          
+
           <p className="text-xs text-gray-400 my-2.5">Confirmation emails with QR codes sent to all team members</p>
-          
+
           <button onClick={() => setTeamJustCompleted(false)} className="btn-primary mt-2.5 py-2.5 px-6">
             View Team Dashboard
           </button>
@@ -353,7 +365,7 @@ function EventDetails({ token, eventId, onBack, user }) {
   return (
     <div>
       <button onClick={onBack} className="btn-secondary mb-4">← Back</button>
-      
+
       <h2>{event.eventName}</h2>
       <span className={`${event.eventType === 'merchandise' ? 'bg-yellow-500' : 'bg-teal-500'} text-white px-2 py-0.5 rounded`}>
         {event.eventType.toUpperCase()}
@@ -377,6 +389,7 @@ function EventDetails({ token, eventId, onBack, user }) {
         {event.eventTags?.length > 0 && <p><strong>Tags:</strong> {event.eventTags.join(', ')}</p>}
       </div>
 
+      {/* merchandise options section for size color and variant selection */}
       {event.eventType === 'merchandise' && event.itemDetails && (
         <div className="bg-yellow-100 p-4 my-4">
           <h4>Merchandise Options</h4>
@@ -403,6 +416,7 @@ function EventDetails({ token, eventId, onBack, user }) {
         </div>
       )}
 
+      {/* custom registration form fields defined by the organizer */}
       {event.customForm?.length > 0 && (
         <div className="bg-green-100 p-4 my-4">
           <h4>Registration Form</h4>
@@ -475,7 +489,7 @@ function EventDetails({ token, eventId, onBack, user }) {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setCustomFormData(prev => { const next = {...prev}; delete next[field.fieldName]; return next; })}
+                        onClick={() => setCustomFormData(prev => { const next = { ...prev }; delete next[field.fieldName]; return next; })}
                         className="text-red-500 text-xs ml-1 cursor-pointer bg-transparent border-none"
                       >Remove</button>
                     </div>
@@ -499,7 +513,7 @@ function EventDetails({ token, eventId, onBack, user }) {
       {event.teamBased ? (
         <div className="bg-blue-50 p-5 my-4 border border-blue-300 rounded-lg">
           <h4 className="mt-0 mb-4">Team Registration (Min: {event.minTeamSize}, Max: {event.maxTeamSize} members)</h4>
-          
+
           {teamLoading ? <p>Loading team info...</p> : myTeam ? (
             <div className="bg-white p-5 border border-gray-300 rounded-lg">
               <div className="flex justify-between items-center mb-4">
@@ -521,7 +535,7 @@ function EventDetails({ token, eventId, onBack, user }) {
                   ></div>
                 </div>
               </div>
-              
+
               {myTeam.status === 'forming' && (
                 <div className="bg-yellow-100 p-3 mb-4 rounded-md border border-yellow-500">
                   <div className="flex items-center justify-between">
@@ -531,7 +545,7 @@ function EventDetails({ token, eventId, onBack, user }) {
                         {myTeam.inviteCode}
                       </div>
                     </div>
-                    <button onClick={() => { navigator.clipboard.writeText(myTeam.inviteCode); setMessage('Invite code copied!'); }} 
+                    <button onClick={() => { navigator.clipboard.writeText(myTeam.inviteCode); setMessage('Invite code copied!'); }}
                       className="btn-secondary">Copy</button>
                   </div>
                   <p className="text-xs text-yellow-800 mt-2">Share this code with teammates so they can join your team</p>
@@ -621,7 +635,7 @@ function EventDetails({ token, eventId, onBack, user }) {
                     <button onClick={() => setTeamTab('create')} className={`px-4 py-2 border-0 cursor-pointer rounded ${teamTab === 'create' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-black'}`}>Create Team</button>
                     <button onClick={() => setTeamTab('join')} className={`px-4 py-2 border-0 cursor-pointer rounded ${teamTab === 'join' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-black'}`}>Join Team</button>
                   </div>
-                  
+
                   {teamTab === 'create' ? (
                     <div>
                       <input type="text" placeholder="Team Name" value={createTeamName} onChange={(e) => setCreateTeamName(e.target.value)} className="mb-2.5" />

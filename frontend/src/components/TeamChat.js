@@ -1,8 +1,10 @@
+// team chat component for real time messaging between team members
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function TeamChat({ token, teamId, user, teamMembers, onClose }) {
+  // state for messages typing indicators and online status
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -22,6 +24,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // load messages from server with optional since parameter for new messages only
   const loadMessages = useCallback(async (since) => {
     try {
       const url = since
@@ -61,6 +64,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
     scrollToBottom();
   }, [messages]);
 
+  // poll for new messages every 3 seconds using the latest message timestamp
   useEffect(() => {
     pollRef.current = setInterval(() => {
       if (messages.length > 0) {
@@ -74,6 +78,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
     return () => clearInterval(pollRef.current);
   }, [messages, loadMessages]);
 
+  // send heartbeat every 15 seconds to maintain online presence
   useEffect(() => {
     const sendHeartbeat = async () => {
       try {
@@ -82,7 +87,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ teamId })
         });
-      } catch (e) {}
+      } catch (e) { }
     };
     sendHeartbeat();
     heartbeatRef.current = setInterval(sendHeartbeat, 15000);
@@ -103,9 +108,10 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
     setNewMessage(e.target.value);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     sendTyping();
-    typingTimeoutRef.current = setTimeout(() => {}, 3000);
+    typingTimeoutRef.current = setTimeout(() => { }, 3000);
   };
 
+  // send a text message to the team chat
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
     setSending(true);
@@ -127,6 +133,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
     setSending(false);
   };
 
+  // handle file sharing by uploading and sending as a file message
   const handleFileShare = async (file) => {
     if (!file || uploadingFile) return;
     setUploadingFile(true);
@@ -150,6 +157,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // render file messages with image preview or download link
   const renderFileMessage = (msg) => {
     try {
       const fileInfo = JSON.parse(msg.message);
@@ -200,6 +208,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
     return d.toLocaleDateString();
   };
 
+  // group messages by date for display with date separators
   const groupedMessages = messages.reduce((groups, msg) => {
     const date = formatDate(msg.createdAt);
     if (!groups[date]) groups[date] = [];
@@ -337,9 +346,8 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
           type="button"
           onClick={handleSend}
           disabled={!newMessage.trim() || sending}
-          className={`inline-block w-auto m-0 px-[18px] py-2.5 border-none rounded-full text-white text-sm font-bold flex-shrink-0 ${
-            newMessage.trim() ? 'bg-purple-600 cursor-pointer' : 'bg-gray-300 cursor-default'
-          }`}
+          className={`inline-block w-auto m-0 px-[18px] py-2.5 border-none rounded-full text-white text-sm font-bold flex-shrink-0 ${newMessage.trim() ? 'bg-purple-600 cursor-pointer' : 'bg-gray-300 cursor-default'
+            }`}
         >
           {sending ? '...' : 'Send'}
         </button>

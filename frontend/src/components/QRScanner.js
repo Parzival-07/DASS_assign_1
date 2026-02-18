@@ -1,3 +1,4 @@
+// QR code scanner component for event attendance verification
 import React, { useState, useEffect, useRef } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -9,6 +10,7 @@ function QRScanner({ token, eventId, onScanComplete }) {
   const [manualTicketId, setManualTicketId] = useState('');
   const html5QrCodeRef = useRef(null);
 
+  // start camera scanner using html5 qrcode library
   const startScanner = async () => {
     setError('');
     setResult(null);
@@ -16,7 +18,7 @@ function QRScanner({ token, eventId, onScanComplete }) {
       const { Html5Qrcode } = await import('html5-qrcode');
       const scanner = new Html5Qrcode('qr-reader');
       html5QrCodeRef.current = scanner;
-      
+
       await scanner.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 250 } },
@@ -24,7 +26,7 @@ function QRScanner({ token, eventId, onScanComplete }) {
           handleQRData(decodedText);
           stopScanner();
         },
-        () => {}
+        () => { }
       );
       setScanning(true);
     } catch (err) {
@@ -45,6 +47,7 @@ function QRScanner({ token, eventId, onScanComplete }) {
     return () => { stopScanner(); };
   }, []);
 
+  // process scanned QR data and send to server for attendance marking
   const handleQRData = async (rawData) => {
     setResult(null);
     setError('');
@@ -67,7 +70,7 @@ function QRScanner({ token, eventId, onScanComplete }) {
         body: JSON.stringify(qrPayload)
       });
       const data = await res.json();
-      
+
       setResult({
         scanResult: data.scanResult,
         message: data.message,
@@ -80,6 +83,7 @@ function QRScanner({ token, eventId, onScanComplete }) {
     }
   };
 
+  // handle QR code scanning from an uploaded image file
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -95,6 +99,7 @@ function QRScanner({ token, eventId, onScanComplete }) {
     }
   };
 
+  // manually verify a ticket ID entered by the organizer
   const handleManualEntry = async () => {
     if (!manualTicketId.trim()) return;
     setResult(null);
@@ -118,6 +123,7 @@ function QRScanner({ token, eventId, onScanComplete }) {
     }
   };
 
+  // determine result styling class based on scan outcome
   const getResultClass = () => {
     if (!result) return '';
     const classes = {

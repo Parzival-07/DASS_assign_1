@@ -1,3 +1,4 @@
+// browse events page with search filtering and trending events display
 import React, { useState, useEffect } from 'react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -17,6 +18,7 @@ function BrowseEvents({ token, onSelectEvent }) {
   useEffect(() => { loadTrending(); }, []);
   useEffect(() => { searchEvents(); }, [search, eventType, eligibility, startDate, endDate, followedOnly, matchingInterests]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // fetch trending events sorted by registration count
   const loadTrending = async () => {
     try {
       const res = await fetch(`${API_URL}/browse/trending`);
@@ -25,6 +27,7 @@ function BrowseEvents({ token, onSelectEvent }) {
     } catch (err) { console.error(err); }
   };
 
+  // search and filter events based on user selected criteria
   const searchEvents = async () => {
     setLoading(true);
     try {

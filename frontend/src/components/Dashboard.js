@@ -1,3 +1,4 @@
+// main student dashboard with page navigation and onboarding
 import React, { useState } from 'react';
 import Navbar from './Navbar';
 import OnboardingForm from './OnboardingForm';

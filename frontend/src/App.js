@@ -1,3 +1,4 @@
+// main app component handling authentication state and role based rendering
 import React, { useState, useEffect } from 'react';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
@@ -9,9 +10,9 @@ import { verifyToken } from './services/api';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function App() {
-  const [user, setUser] = useState(null); 
-  const [token, setToken] = useState(localStorage.getItem('token')); 
-  const [showRegister, setShowRegister] = useState(false); 
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [showRegister, setShowRegister] = useState(false);
 
   const [forceChangePassword, setForceChangePassword] = useState(false);
   const [tempPassword, setTempPassword] = useState('');
@@ -29,19 +30,19 @@ function App() {
     verifyToken(token)
       .then(data => {
         if (data.valid) {
-          setUser(data.user); 
+          setUser(data.user);
           if (data.user.mustChangePassword) {
             setForceChangePassword(true);
           }
         } else {
-          logout(); 
+          logout();
         }
       })
       .catch(() => logout());
   };
 
   const logout = () => {
-    localStorage.removeItem('token'); 
+    localStorage.removeItem('token');
     setToken(null);
     setUser(null);
     setForceChangePassword(false);
@@ -78,7 +79,7 @@ function App() {
         setNewPassword('');
         setConfirmNewPassword('');
         setChangeMsg('');
-        loadUser(); 
+        loadUser();
       } else {
         setChangeMsg(data.message || 'Failed to change password');
       }
@@ -100,30 +101,30 @@ function App() {
           <h2>Set New Password</h2>
           <div>
             <label className="block font-bold mb-1">Temporary Password (from admin)</label>
-            <input 
-              type="password" 
-              placeholder="Enter the password provided by admin" 
-              value={tempPassword} 
+            <input
+              type="password"
+              placeholder="Enter the password provided by admin"
+              value={tempPassword}
               onChange={(e) => setTempPassword(e.target.value)}
               className="mb-4"
             />
           </div>
           <div>
             <label className="block font-bold mb-1">New Password</label>
-            <input 
-              type="password" 
-              placeholder="Enter your new password (min 6 characters)" 
-              value={newPassword} 
+            <input
+              type="password"
+              placeholder="Enter your new password (min 6 characters)"
+              value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="mb-4"
             />
           </div>
           <div>
             <label className="block font-bold mb-1">Confirm New Password</label>
-            <input 
-              type="password" 
-              placeholder="Re-enter your new password" 
-              value={confirmNewPassword} 
+            <input
+              type="password"
+              placeholder="Re-enter your new password"
+              value={confirmNewPassword}
               onChange={(e) => setConfirmNewPassword(e.target.value)}
               className="mb-4"
             />
@@ -153,7 +154,7 @@ function App() {
   return (
     <div className="container">
       <h1>{showRegister ? 'Register' : 'Login'}</h1>
-      
+
       {showRegister ? (
         <RegisterForm />
       ) : (
@@ -163,7 +164,7 @@ function App() {
         }} />
       )}
 
-      <button 
+      <button
         onClick={() => setShowRegister(!showRegister)}
         className="btn-secondary"
       >

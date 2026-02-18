@@ -1,3 +1,4 @@
+// centralized API service functions for all backend communication
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export const register = async (email, password, role, firstName, lastName, collegeName, contactNumber) => {

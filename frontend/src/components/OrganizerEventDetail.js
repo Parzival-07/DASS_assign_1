@@ -1,9 +1,11 @@
+// organizer event detail page for managing individual events
 import React, { useState, useEffect } from 'react';
 import QRScanner from './QRScanner';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function OrganizerEventDetail({ token, eventId, onBack }) {
+  // state for event data analytics participants and editing
   const [event, setEvent] = useState(null);
   const [analytics, setAnalytics] = useState({});
   const [participants, setParticipants] = useState([]);
@@ -27,6 +29,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
     loadEventDetail();
   }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // fetch event details analytics and participant list from backend
   const loadEventDetail = async () => {
     setLoading(true);
     try {
@@ -60,6 +63,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
     setLoading(false);
   };
 
+  // load filtered participant list with search and filter parameters
   const loadParticipants = async () => {
     try {
       let url = `${API_URL}/organizer/event/${eventId}/participants?`;
@@ -95,6 +99,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
     }
   };
 
+  // update event status like publish close or mark as completed
   const updateStatus = async (newStatus) => {
     if (!window.confirm(`Change status to ${newStatus}?`)) return;
     try {
@@ -111,6 +116,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
     }
   };
 
+  // save edited event details back to the server
   const saveEdit = async () => {
     try {
       let payload = { ...editData };
@@ -161,6 +167,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
     }
   };
 
+  // export participant data as CSV file for download
   const exportCSV = () => {
     const headers = ['Name', 'Email', 'Registration Date', 'Payment', 'Team', 'Attendance', 'Attendance Time', 'Attendance Method', 'Status'];
     const rows = participants.map(p => [
@@ -200,6 +207,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
     a.click();
   };
 
+  // manually mark attendance for a participant with a reason
   const handleManualOverride = async (registrationId) => {
     const reason = window.prompt('Reason for manual attendance override:');
     if (reason === null) return;
@@ -257,6 +265,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
   if (loading) return <p>Loading...</p>;
   if (!event) return <p>Event not found</p>;
 
+  // map event status to background color class for display badges
   const getStatusClass = (status) => {
     const classes = { draft: 'bg-gray-500', published: 'bg-green-600', ongoing: 'bg-blue-600', completed: 'bg-teal-500', closed: 'bg-red-600' };
     return classes[status] || 'bg-gray-500';
@@ -264,6 +273,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
 
   const canEdit = event.status === 'draft' || event.status === 'published';
 
+  // compute actual status based on current time and event dates
   const getComputedStatus = (ev) => {
     if (!ev) return 'draft';
     const stored = ev.status;
@@ -324,6 +334,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
         ))}
       </div>
 
+      {/* overview tab with event details and edit form */}
       {tab === 'overview' && (
         <div>
           {!editMode ? (
@@ -403,6 +414,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
         </div>
       )}
 
+      {/* analytics tab showing registration attendance and revenue stats */}
       {tab === 'analytics' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <div className="stat-card bg-blue-100">
@@ -430,6 +442,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
         </div>
       )}
 
+      {/* participants tab with search filters and attendance toggle */}
       {tab === 'participants' && (
         <div>
           <div className="flex gap-2.5 mb-4 flex-wrap">
@@ -487,6 +500,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
         </div>
       )}
 
+      {/* QR scanner tab for checking in participants at the event */}
       {tab === 'scanner' && (
         <div>
           {attendanceStats && (
@@ -584,6 +598,7 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
         </div>
       )}
 
+      {/* custom form builder tab for event registration form fields */}
       {tab === 'form' && (
         <div>
           <h4>Custom Registration Form</h4>

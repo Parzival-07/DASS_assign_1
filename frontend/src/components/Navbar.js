@@ -1,3 +1,4 @@
+// navigation bar with page tabs and logout button
 import React from 'react';
 function Navbar({ currentPage, setPage, logout }) {
   const btnClass = (active) =>
