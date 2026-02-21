@@ -1,3 +1,4 @@
+// password reset request routes for organizer initiated admin approved resets
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
@@ -6,8 +7,10 @@ const PasswordResetRequest = require('../models/PasswordResetRequest');
 const User = require('../models/User');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 
+// generate a random password for approved reset requests
 const generatePassword = () => crypto.randomBytes(8).toString('hex');
 
+// organizer submits a password reset request with a reason
 router.post('/request', authenticateToken, async (req, res) => {
   try {
     if (req.user.role !== 'organizer') {
@@ -39,6 +42,7 @@ router.post('/request', authenticateToken, async (req, res) => {
   }
 });
 
+// organizer views their own reset request history
 router.get('/my-requests', authenticateToken, async (req, res) => {
   try {
     if (req.user.role !== 'organizer') {
@@ -53,6 +57,7 @@ router.get('/my-requests', authenticateToken, async (req, res) => {
   }
 });
 
+// admin views all reset requests with optional status filter
 router.get('/all-requests', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { status } = req.query;
@@ -71,6 +76,7 @@ router.get('/all-requests', authenticateToken, isAdmin, async (req, res) => {
   }
 });
 
+// admin approves reset request and generates a new password
 router.post('/approve/:requestId', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { comment } = req.body;
@@ -87,7 +93,7 @@ router.post('/approve/:requestId', authenticateToken, isAdmin, async (req, res) 
 
     request.status = 'approved';
     request.adminComment = comment || '';
-    request.generatedPassword = newPlainPassword; 
+    request.generatedPassword = newPlainPassword;
     request.reviewedAt = new Date();
     request.reviewedBy = req.user.id;
     await request.save();
@@ -105,6 +111,7 @@ router.post('/approve/:requestId', authenticateToken, isAdmin, async (req, res) 
   }
 });
 
+// admin rejects a reset request with an optional comment
 router.post('/reject/:requestId', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { comment } = req.body;

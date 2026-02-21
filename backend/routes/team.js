@@ -1,3 +1,4 @@
+// team routes for creating joining and leaving hackathon teams with ticket generation
 const express = require('express');
 const router = express.Router();
 const Team = require('../models/Team');
@@ -11,6 +12,7 @@ const crypto = require('crypto');
 const generateInviteCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
 const generateTicketId = () => 'TKT-' + crypto.randomBytes(6).toString('hex').toUpperCase();
 
+// create a new team for a team based event with invite code
 router.post('/create', authenticateToken, async (req, res) => {
   try {
     const { eventId, teamName, maxSize } = req.body;
@@ -73,6 +75,7 @@ router.post('/create', authenticateToken, async (req, res) => {
   }
 });
 
+// join a team using invite code with atomic ticket generation on team completion
 router.post('/join', authenticateToken, async (req, res) => {
   try {
     const { inviteCode } = req.body;
@@ -204,6 +207,7 @@ router.post('/join', authenticateToken, async (req, res) => {
   }
 });
 
+// get current user team and tickets for a specific event
 router.get('/my-team/:eventId', authenticateToken, async (req, res) => {
   try {
     const team = await Team.findOne({
@@ -230,6 +234,7 @@ router.get('/my-team/:eventId', authenticateToken, async (req, res) => {
   }
 });
 
+// leave or disband team with leader cascade cancellation and member removal
 router.post('/leave/:teamId', authenticateToken, async (req, res) => {
   try {
     const team = await Team.findById(req.params.teamId);
@@ -297,6 +302,7 @@ router.post('/leave/:teamId', authenticateToken, async (req, res) => {
   }
 });
 
+// list all teams for an event used by organizer event detail page
 router.get('/event/:eventId', authenticateToken, async (req, res) => {
   try {
     const teams = await Team.find({ eventId: req.params.eventId })

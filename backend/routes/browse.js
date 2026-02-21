@@ -1,3 +1,4 @@
+// browse routes for event search filtering trending and club discovery
 const express = require('express');
 const router = express.Router();
 const Event = require('../models/Event');
@@ -5,11 +6,13 @@ const Registration = require('../models/Registration');
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 
+// build a fuzzy regex that allows up to 2 extra chars between typed characters
 const buildFuzzyRegex = (str) => {
   const escaped = str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return escaped.split('').join('.{0,2}');
 };
 
+// search and filter published events with fuzzy text matching and interest sorting
 router.get('/events', authenticateToken, async (req, res) => {
   try {
     const { search, eventType, eligibility, startDate, endDate, followedOnly, matchingInterests } = req.query;
@@ -99,6 +102,7 @@ router.get('/events', authenticateToken, async (req, res) => {
   }
 });
 
+// get top 5 trending events based on registrations in the last 24 hours
 router.get('/trending', async (req, res) => {
   try {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -122,6 +126,7 @@ router.get('/trending', async (req, res) => {
   }
 });
 
+// get single event details with availability and deadline info
 router.get('/event/:id', async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
@@ -143,6 +148,7 @@ router.get('/event/:id', async (req, res) => {
   }
 });
 
+// list all active organizers for the clubs listing page
 router.get('/clubs', async (req, res) => {
   try {
     const clubs = await User.find({
@@ -157,6 +163,7 @@ router.get('/clubs', async (req, res) => {
   }
 });
 
+// get organizer details with their upcoming and past events
 router.get('/club/:id', async (req, res) => {
   try {
     const club = await User.findById(req.params.id)
@@ -183,6 +190,7 @@ router.get('/club/:id', async (req, res) => {
   }
 });
 
+// toggle follow or unfollow a club for personalized event feed
 router.post('/club/:id/follow', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -202,6 +210,7 @@ router.post('/club/:id/follow', authenticateToken, async (req, res) => {
   }
 });
 
+// check if current user is following a specific club
 router.get('/club/:id/following', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);

@@ -1,4 +1,4 @@
-
+// registration routes for event signup ticket generation and cancellation
 const express = require('express');
 const router = express.Router();
 const Registration = require('../models/Registration');
@@ -9,8 +9,10 @@ const { authenticateToken } = require('../middleware/auth');
 const { sendTicketEmail } = require('../config/email');
 const crypto = require('crypto');
 
+// generate unique ticket ID with TKT prefix for registration receipts
 const generateTicketId = () => 'TKT-' + crypto.randomBytes(6).toString('hex').toUpperCase();
 
+// register a participant for an event with validation stock and custom form checks
 router.post('/register', authenticateToken, async (req, res) => {
   try {
     const { eventId, selectedSize, selectedColor, selectedVariant, quantity, customFormData, teamName } = req.body;
@@ -45,8 +47,8 @@ router.post('/register', authenticateToken, async (req, res) => {
         if (value === undefined || value === null) return false;
         if (typeof value === 'string') return value.trim().length > 0;
         if (Array.isArray(value)) return value.length > 0;
-        if (typeof value === 'boolean') return value === true; 
-        return true; 
+        if (typeof value === 'boolean') return value === true;
+        return true;
       };
 
       const missing = [];
@@ -126,7 +128,7 @@ router.post('/register', authenticateToken, async (req, res) => {
     }
 
     const user = await User.findById(userId).select('email firstName lastName');
-    
+
     sendTicketEmail(user.email, {
       userName: `${user.firstName} ${user.lastName}`,
       eventName: event.eventName,
@@ -152,6 +154,20 @@ router.post('/register', authenticateToken, async (req, res) => {
   }
 });
 
+// compute real event status from dates so student dashboard auto-transitions
+const getComputedStatus = (event) => {
+  if (!event) return 'draft';
+  const stored = event.status;
+  if (['draft', 'closed', 'completed'].includes(stored)) return stored;
+  const now = new Date();
+  const start = new Date(event.eventStartDate);
+  const end = new Date(event.eventEndDate);
+  if (now > end) return 'completed';
+  if (now >= start && now <= end) return 'ongoing';
+  return stored;
+};
+
+// get all events for the logged in student categorized by computed status
 router.get('/my-events', authenticateToken, async (req, res) => {
   try {
     const registrations = await Registration.find({ userId: req.user.id })
@@ -161,16 +177,19 @@ router.get('/my-events', authenticateToken, async (req, res) => {
       })
       .sort({ registeredAt: -1 });
 
-    const upcoming = registrations.filter(r =>
-      r.status === 'confirmed' &&
-      r.eventId?.status &&
-      ['published', 'ongoing', 'closed'].includes(r.eventId.status)
-    );
+    // use computed status so events move to completed when end date passes
+    const upcoming = registrations.filter(r => {
+      if (r.status !== 'confirmed' || !r.eventId) return false;
+      const computed = getComputedStatus(r.eventId);
+      return ['published', 'ongoing'].includes(computed);
+    });
 
-    const completed = registrations.filter(r =>
-      r.status === 'completed' ||
-      (r.status === 'confirmed' && r.eventId?.status === 'completed')
-    );
+    const completed = registrations.filter(r => {
+      if (r.status === 'completed') return true;
+      if (r.status !== 'confirmed' || !r.eventId) return false;
+      const computed = getComputedStatus(r.eventId);
+      return computed === 'completed' || computed === 'closed';
+    });
     const cancelled = registrations.filter(r => r.status === 'cancelled');
     const normal = registrations.filter(r => r.eventType === 'normal');
     const merchandise = registrations.filter(r => r.eventType === 'merchandise');
@@ -181,6 +200,7 @@ router.get('/my-events', authenticateToken, async (req, res) => {
   }
 });
 
+// fetch a single ticket by its ID for the ticket view page
 router.get('/ticket/:ticketId', authenticateToken, async (req, res) => {
   try {
     const registration = await Registration.findOne({ ticketId: req.params.ticketId })
@@ -193,6 +213,7 @@ router.get('/ticket/:ticketId', authenticateToken, async (req, res) => {
   }
 });
 
+// generate and download an ICS calendar file for a ticket
 router.get('/calendar/:ticketId', authenticateToken, async (req, res) => {
   try {
     const registration = await Registration.findOne({ ticketId: req.params.ticketId })
@@ -246,6 +267,7 @@ router.get('/calendar/:ticketId', authenticateToken, async (req, res) => {
   }
 });
 
+// cancel a registration with team aware logic for leaders and members
 router.post('/cancel/:ticketId', authenticateToken, async (req, res) => {
   try {
     const registration = await Registration.findOne({ ticketId: req.params.ticketId, userId: req.user.id });

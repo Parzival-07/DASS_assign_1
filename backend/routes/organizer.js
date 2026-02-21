@@ -1,3 +1,4 @@
+// organizer routes for profile dashboard event management and attendance tracking
 const express = require('express');
 const router = express.Router();
 const Event = require('../models/Event');
@@ -7,6 +8,7 @@ const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 const fetch = require('node-fetch');
 
+// middleware to restrict routes to organizer role only
 const isOrganizer = (req, res, next) => {
   if (req.user.role !== 'organizer') {
     return res.status(403).json({ message: 'Organizers only' });
@@ -14,6 +16,7 @@ const isOrganizer = (req, res, next) => {
   next();
 };
 
+// get organizer profile data excluding password
 router.get('/profile', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const organizer = await User.findById(req.user.id).select('-password');
@@ -23,38 +26,40 @@ router.get('/profile', authenticateToken, isOrganizer, async (req, res) => {
   }
 });
 
+// update organizer profile including discord webhook
 router.put('/profile', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const { organizationName, category, description, contactEmail, contactNumber, discordWebhook } = req.body;
-    
+
     const organizer = await User.findByIdAndUpdate(
       req.user.id,
       { organizationName, category, description, contactEmail, contactNumber, discordWebhook },
       { new: true }
     ).select('-password');
-    
+
     res.json({ message: 'Profile updated', organizer });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
+// get organizer dashboard with all events and aggregate analytics
 router.get('/dashboard', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const events = await Event.find({ organizerId: req.user.id }).sort({ createdAt: -1 });
-    
+
     const completedEvents = events.filter(e => e.status === 'completed');
     let totalRegistrations = 0;
     let totalRevenue = 0;
     let totalAttendance = 0;
-    
+
     for (const event of completedEvents) {
       const regs = await Registration.find({ eventId: event._id, status: { $in: ['confirmed', 'completed'] } });
       totalRegistrations += regs.length;
       totalRevenue += regs.reduce((sum, r) => sum + (event.registrationFee * (r.quantity || 1)), 0);
       totalAttendance += regs.filter(r => r.attendance).length;
     }
-    
+
     res.json({
       events,
       analytics: {
@@ -70,6 +75,7 @@ router.get('/dashboard', authenticateToken, isOrganizer, async (req, res) => {
   }
 });
 
+// list ongoing and published events for the organizer sidebar
 router.get('/ongoing', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const events = await Event.find({
@@ -82,25 +88,26 @@ router.get('/ongoing', authenticateToken, isOrganizer, async (req, res) => {
   }
 });
 
+// get detailed event view with analytics and participant list
 router.get('/event/:id', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const event = await Event.findOne({ _id: req.params.id, organizerId: req.user.id });
     if (!event) return res.status(404).json({ message: 'Event not found' });
-    
+
     const registrations = await Registration.find({ eventId: event._id })
       .populate('userId', 'firstName lastName email contactNumber');
-    
+
     const confirmed = registrations.filter(r => r.status === 'confirmed' || r.status === 'completed');
     const attended = confirmed.filter(r => r.attendance).length;
     const revenue = confirmed.reduce((sum, r) => sum + (event.registrationFee * (r.quantity || 1)), 0);
-    
-    const teamsComplete = event.teamBased 
-      ? await Team.countDocuments({ eventId: event._id, status: 'complete' }) 
+
+    const teamsComplete = event.teamBased
+      ? await Team.countDocuments({ eventId: event._id, status: 'complete' })
       : 0;
     const totalTeams = event.teamBased
       ? await Team.countDocuments({ eventId: event._id })
       : 0;
-    
+
     res.json({
       event,
       analytics: {
@@ -118,19 +125,20 @@ router.get('/event/:id', authenticateToken, isOrganizer, async (req, res) => {
   }
 });
 
+// filterable participant list with search status attendance and institution filters
 router.get('/event/:id/participants', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const { search, status, attendance, institution } = req.query;
     const event = await Event.findOne({ _id: req.params.id, organizerId: req.user.id });
     if (!event) return res.status(404).json({ message: 'Event not found' });
-    
+
     let query = { eventId: event._id };
     if (status) query.status = status;
     if (attendance !== undefined) query.attendance = attendance === 'true';
-    
+
     let registrations = await Registration.find(query)
       .populate('userId', 'firstName lastName email contactNumber role');
-    
+
     if (institution) {
       registrations = registrations.filter(r => {
         if (institution === 'iiit') return r.userId?.role === 'iiit-student';
@@ -141,25 +149,26 @@ router.get('/event/:id/participants', authenticateToken, isOrganizer, async (req
 
     if (search) {
       const s = search.toLowerCase();
-      registrations = registrations.filter(r => 
+      registrations = registrations.filter(r =>
         r.userId?.firstName?.toLowerCase().includes(s) ||
         r.userId?.lastName?.toLowerCase().includes(s) ||
         r.userId?.email?.toLowerCase().includes(s) ||
         r.ticketId?.toLowerCase().includes(s)
       );
     }
-    
+
     res.json(registrations);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
+// manually toggle attendance for a participant
 router.put('/event/:id/attendance/:regId', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const event = await Event.findOne({ _id: req.params.id, organizerId: req.user.id });
     if (!event) return res.status(404).json({ message: 'Event not found' });
-    
+
     const registration = await Registration.findByIdAndUpdate(
       req.params.regId,
       {
@@ -169,13 +178,14 @@ router.put('/event/:id/attendance/:regId', authenticateToken, isOrganizer, async
       },
       { new: true }
     );
-    
+
     res.json({ message: 'Attendance updated', registration });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
+// validate and process a QR code scan for attendance marking
 router.post('/event/:id/scan-qr', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const { ticketId, eventId: qrEventId, userId: qrUserId } = req.body;
@@ -229,6 +239,7 @@ router.post('/event/:id/scan-qr', authenticateToken, isOrganizer, async (req, re
   }
 });
 
+// mark attendance manually with audit logging
 router.post('/event/:id/manual-attendance', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const { registrationId, reason } = req.body;
@@ -258,6 +269,7 @@ router.post('/event/:id/manual-attendance', authenticateToken, isOrganizer, asyn
   }
 });
 
+// get attendance statistics with scanned and not scanned lists
 router.get('/event/:id/attendance-stats', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const event = await Event.findOne({ _id: req.params.id, organizerId: req.user.id });
@@ -295,12 +307,13 @@ router.get('/event/:id/attendance-stats', authenticateToken, isOrganizer, async 
   }
 });
 
+// change event status with valid transition enforcement and discord notification
 router.put('/event/:id/status', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const { status } = req.body;
     const event = await Event.findOne({ _id: req.params.id, organizerId: req.user.id });
     if (!event) return res.status(404).json({ message: 'Event not found' });
-    
+
     const validTransitions = {
       'draft': ['published'],
       'published': ['ongoing', 'closed', 'completed'],
@@ -308,18 +321,18 @@ router.put('/event/:id/status', authenticateToken, isOrganizer, async (req, res)
       'completed': [],
       'closed': ['ongoing', 'completed']
     };
-    
+
     if (!validTransitions[event.status]?.includes(status)) {
       return res.status(400).json({ message: `Cannot change status from ${event.status} to ${status}` });
     }
-    
+
     event.status = status;
 
     if (status === 'published' && !event.publishedAt) {
       event.publishedAt = new Date();
     }
     await event.save();
-    
+
     if (status === 'published') {
       const organizer = await User.findById(req.user.id);
       if (organizer.discordWebhook) {
@@ -336,20 +349,21 @@ router.put('/event/:id/status', authenticateToken, isOrganizer, async (req, res)
         }
       }
     }
-    
+
     res.json({ message: 'Status updated', event });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
+// edit event with status based field restrictions
 router.put('/event/:id/edit', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const event = await Event.findOne({ _id: req.params.id, organizerId: req.user.id });
     if (!event) return res.status(404).json({ message: 'Event not found' });
-    
+
     const updates = req.body;
-    
+
     if (event.status === 'draft') {
       Object.assign(event, updates);
     }
@@ -370,7 +384,7 @@ router.put('/event/:id/edit', authenticateToken, isOrganizer, async (req, res) =
     else {
       return res.status(400).json({ message: 'Cannot edit event in current status' });
     }
-    
+
     await event.save();
     res.json({ message: 'Event updated', event });
   } catch (error) {
@@ -378,18 +392,19 @@ router.put('/event/:id/edit', authenticateToken, isOrganizer, async (req, res) =
   }
 });
 
+// update custom registration form locked after first registration
 router.put('/event/:id/form', authenticateToken, isOrganizer, async (req, res) => {
   try {
     const event = await Event.findOne({ _id: req.params.id, organizerId: req.user.id });
     if (!event) return res.status(404).json({ message: 'Event not found' });
-    
+
     if (event.formLocked) {
       return res.status(400).json({ message: 'Form is locked after first registration' });
     }
-    
+
     event.customForm = req.body.customForm;
     await event.save();
-    
+
     res.json({ message: 'Form updated', event });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

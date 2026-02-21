@@ -1,12 +1,14 @@
+// user routes for profile management preferences and organizer listing
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 
+// get full user profile with followed clubs populated
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
-      .select('-password') 
+      .select('-password')
       .populate('followingClubs', 'organizationName category');
 
     if (!user) {
@@ -19,6 +21,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// update user personal information
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
     const { firstName, lastName, collegeName, contactNumber } = req.body;
@@ -40,6 +43,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// save user interest areas and followed clubs during onboarding
 router.post('/preferences', authenticateToken, async (req, res) => {
   try {
     const { areasOfInterest, followingClubs } = req.body;
@@ -54,15 +58,16 @@ router.post('/preferences', authenticateToken, async (req, res) => {
       { new: true }
     ).select('-password').populate('followingClubs', 'organizationName category');
 
-    res.json({ 
-      message: 'Preferences saved successfully', 
-      user 
+    res.json({
+      message: 'Preferences saved successfully',
+      user
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
+// skip onboarding and mark as complete without setting preferences
 router.post('/skip-onboarding', authenticateToken, async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
@@ -71,15 +76,16 @@ router.post('/skip-onboarding', authenticateToken, async (req, res) => {
       { new: true }
     ).select('-password');
 
-    res.json({ 
-      message: 'Onboarding skipped', 
-      user 
+    res.json({
+      message: 'Onboarding skipped',
+      user
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
+// list active organizers for the onboarding club selection
 router.get('/organizers', authenticateToken, async (req, res) => {
   try {
     const organizers = await User.find({ role: 'organizer', isArchived: { $ne: true }, isActive: { $ne: false } })
@@ -91,6 +97,7 @@ router.get('/organizers', authenticateToken, async (req, res) => {
   }
 });
 
+// return predefined list of interest areas for user preferences
 router.get('/interest-areas', (req, res) => {
   const interestAreas = [
     'Technology',

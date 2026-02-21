@@ -1,9 +1,11 @@
+// event routes for creating editing deleting and listing organizer events
 const express = require('express');
 const router = express.Router();
 const Event = require('../models/Event');
 const Registration = require('../models/Registration');
 const { authenticateToken } = require('../middleware/auth');
 
+// create a new event as draft or published with date validation and discord notification
 router.post('/create', authenticateToken, async (req, res) => {
   try {
     if (req.user.role !== 'organizer') {
@@ -34,7 +36,7 @@ router.post('/create', authenticateToken, async (req, res) => {
     const eventData = {
       ...req.body,
       organizerId: req.user.id,
-      status: req.body.status || 'draft' 
+      status: req.body.status || 'draft'
     };
 
     if (eventData.status === 'published') {
@@ -69,58 +71,60 @@ router.post('/create', authenticateToken, async (req, res) => {
   }
 });
 
+// get all published events with personalized sorting for logged in users
 router.get('/all', async (req, res) => {
   try {
     const events = await Event.find({ status: { $in: ['published', 'ongoing'] } })
       .populate('organizerId', 'organizationName email category');
-    
+
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    
+
     if (token) {
       const jwt = require('jsonwebtoken');
       try {
         const user = jwt.verify(token, process.env.JWT_SECRET);
         const User = require('../models/User');
         const userData = await User.findById(user.id).select('areasOfInterest followingClubs');
-        
+
         const sortedEvents = events.sort((a, b) => {
           let scoreA = 0, scoreB = 0;
-          
+
           if (userData.followingClubs?.includes(a.organizerId?._id?.toString())) scoreA += 10;
           if (userData.followingClubs?.includes(b.organizerId?._id?.toString())) scoreB += 10;
-          
-          const matchingTagsA = a.eventTags?.filter(tag => 
-            userData.areasOfInterest?.some(interest => 
-              tag.toLowerCase().includes(interest.toLowerCase()) || 
+
+          const matchingTagsA = a.eventTags?.filter(tag =>
+            userData.areasOfInterest?.some(interest =>
+              tag.toLowerCase().includes(interest.toLowerCase()) ||
               interest.toLowerCase().includes(tag.toLowerCase())
             )
           ).length || 0;
-          const matchingTagsB = b.eventTags?.filter(tag => 
-            userData.areasOfInterest?.some(interest => 
-              tag.toLowerCase().includes(interest.toLowerCase()) || 
+          const matchingTagsB = b.eventTags?.filter(tag =>
+            userData.areasOfInterest?.some(interest =>
+              tag.toLowerCase().includes(interest.toLowerCase()) ||
               interest.toLowerCase().includes(tag.toLowerCase())
             )
           ).length || 0;
-          
+
           scoreA += matchingTagsA * 2;
           scoreB += matchingTagsB * 2;
-          
-          return scoreB - scoreA; 
+
+          return scoreB - scoreA;
         });
-        
+
         return res.json(sortedEvents);
       } catch (err) {
-        
+
       }
     }
-    
+
     res.json(events);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
 });
 
+// get events owned by the current organizer
 router.get('/my-events', authenticateToken, async (req, res) => {
   try {
     if (req.user.role !== 'organizer') {
@@ -134,6 +138,7 @@ router.get('/my-events', authenticateToken, async (req, res) => {
   }
 });
 
+// get a single event by ID for the detail view
 router.get('/:id', async (req, res) => {
   try {
     const event = await Event.findById(req.params.id).populate('organizerId', 'organizationName email');
@@ -146,6 +151,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// update event with status based edit restrictions for published events
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
@@ -184,6 +190,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// delete event and cancel all confirmed registrations
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);

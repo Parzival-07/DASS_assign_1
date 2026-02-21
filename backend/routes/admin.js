@@ -1,3 +1,4 @@
+// admin routes for organizer account management and system statistics
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
@@ -10,6 +11,7 @@ const ChatMessage = require('../models/ChatMessage');
 const PasswordResetRequest = require('../models/PasswordResetRequest');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 
+// helper to auto generate credentials for new organizer accounts
 const generatePassword = () => crypto.randomBytes(8).toString('hex');
 
 const generateEmail = (orgName) => {
@@ -18,6 +20,7 @@ const generateEmail = (orgName) => {
   return `${sanitized}.${random}@organizer.events.com`;
 };
 
+// create a new organizer account with optional auto generated credentials
 router.post('/create-organizer', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { organizationName, category, description, autoGenerate } = req.body;
@@ -50,12 +53,12 @@ router.post('/create-organizer', authenticateToken, isAdmin, async (req, res) =>
       organizationName,
       category: category || '',
       description: description || '',
-      isActive: true 
+      isActive: true
     });
 
     await organizer.save();
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Organizer account created successfully',
       organizer: {
         id: organizer._id,
@@ -72,11 +75,12 @@ router.post('/create-organizer', authenticateToken, isAdmin, async (req, res) =>
   }
 });
 
+// list all organizers with optional archive filter
 router.get('/organizers', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { includeArchived, archivedOnly } = req.query;
     let query = { role: 'organizer' };
-    
+
     if (archivedOnly === 'true') {
       query.isArchived = true;
     }
@@ -91,6 +95,7 @@ router.get('/organizers', authenticateToken, isAdmin, async (req, res) => {
   }
 });
 
+// toggle organizer active or disabled status
 router.put('/organizer/:id/status', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { isActive } = req.body;
@@ -104,15 +109,16 @@ router.put('/organizer/:id/status', authenticateToken, isAdmin, async (req, res)
       return res.status(404).json({ message: 'Organizer not found' });
     }
 
-    res.json({ 
+    res.json({
       message: isActive ? 'Organizer enabled' : 'Organizer disabled',
-      organizer 
+      organizer
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
+// archive an organizer account and disable access
 router.put('/organizer/:id/archive', authenticateToken, isAdmin, async (req, res) => {
   try {
     const organizer = await User.findByIdAndUpdate(
@@ -131,6 +137,7 @@ router.put('/organizer/:id/archive', authenticateToken, isAdmin, async (req, res
   }
 });
 
+// restore a previously archived organizer account
 router.put('/organizer/:id/restore', authenticateToken, isAdmin, async (req, res) => {
   try {
     const organizer = await User.findByIdAndUpdate(
@@ -149,6 +156,7 @@ router.put('/organizer/:id/restore', authenticateToken, isAdmin, async (req, res
   }
 });
 
+// permanently delete organizer and cascade remove all associated data
 router.delete('/organizer/:id', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -185,7 +193,7 @@ router.delete('/organizer/:id', authenticateToken, isAdmin, async (req, res) => 
 
     await User.findByIdAndDelete(id);
 
-    res.json({ 
+    res.json({
       message: 'Organizer and all associated data permanently deleted',
       deletedEvents: eventIds.length
     });
@@ -194,6 +202,7 @@ router.delete('/organizer/:id', authenticateToken, isAdmin, async (req, res) => 
   }
 });
 
+// get system wide statistics for the admin dashboard
 router.get('/stats', authenticateToken, isAdmin, async (req, res) => {
   try {
     const totalOrganizers = await User.countDocuments({ role: 'organizer', isArchived: { $ne: true } });

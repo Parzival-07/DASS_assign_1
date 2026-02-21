@@ -1,14 +1,16 @@
+// password routes for admin reset user listing and self service password change
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 
+// submit a password reset request for the logged in user
 router.post('/request-reset', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('email role');
-    
-    res.json({ 
+
+    res.json({
       message: 'Password reset request submitted. Admin will contact you shortly.',
       userEmail: user.email
     });
@@ -17,6 +19,7 @@ router.post('/request-reset', authenticateToken, async (req, res) => {
   }
 });
 
+// admin resets a user password directly
 router.post('/admin-reset', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { userId, newPassword } = req.body;
@@ -34,7 +37,7 @@ router.post('/admin-reset', authenticateToken, isAdmin, async (req, res) => {
     user.password = hashedPassword;
     await user.save();
 
-    res.json({ 
+    res.json({
       message: 'Password reset successful',
       userEmail: user.email
     });
@@ -43,17 +46,19 @@ router.post('/admin-reset', authenticateToken, isAdmin, async (req, res) => {
   }
 });
 
+// list all non admin users for the admin password reset interface
 router.get('/users-list', authenticateToken, isAdmin, async (req, res) => {
   try {
     const users = await User.find({ role: { $ne: 'admin' } })
       .select('email role organizationName firstName lastName');
-    
+
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
+// self service password change with current password verification
 router.post('/change', authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -69,7 +74,7 @@ router.post('/change', authenticateToken, async (req, res) => {
     }
 
     user.password = await bcrypt.hash(newPassword, 10);
-    user.mustChangePassword = false; 
+    user.mustChangePassword = false;
     await user.save();
 
     res.json({ message: 'Password changed successfully' });

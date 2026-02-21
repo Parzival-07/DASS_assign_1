@@ -1,3 +1,4 @@
+// authentication routes for user registration login and token verification
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
@@ -5,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
 
+// register a new participant with role and email domain validation
 router.post('/register', async (req, res) => {
   try {
     const { email, password, role, firstName, lastName, collegeName, contactNumber } = req.body;
@@ -14,15 +16,15 @@ router.post('/register', async (req, res) => {
     }
 
     if (role === 'admin' || role === 'organizer') {
-      return res.status(403).json({ 
-        message: 'Admin and Organizer accounts cannot self-register. Contact administrator.' 
+      return res.status(403).json({
+        message: 'Admin and Organizer accounts cannot self-register. Contact administrator.'
       });
     }
 
     if (role === 'iiit-student') {
       if (!email.endsWith('@iiit.ac.in') && !email.endsWith('@students.iiit.ac.in')) {
-        return res.status(400).json({ 
-          message: 'IIIT students must use @iiit.ac.in or @students.iiit.ac.in email' 
+        return res.status(400).json({
+          message: 'IIIT students must use @iiit.ac.in or @students.iiit.ac.in email'
         });
       }
     }
@@ -42,12 +44,12 @@ router.post('/register', async (req, res) => {
       lastName: lastName || '',
       collegeName: role === 'iiit-student' ? (collegeName || 'IIIT') : (collegeName || ''),
       contactNumber: contactNumber || '',
-      onboardingComplete: false 
+      onboardingComplete: false
     });
 
     await user.save();
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Registration successful',
       user: {
         id: user._id,
@@ -63,6 +65,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// authenticate user credentials and return JWT token
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -91,9 +94,9 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { 
-        id: user._id, 
-        email: user.email, 
+      {
+        id: user._id,
+        email: user.email,
         role: user.role,
         organizationName: user.organizationName,
         onboardingComplete: user.onboardingComplete
@@ -104,7 +107,7 @@ router.post('/login', async (req, res) => {
 
     res.json({
       message: 'Login successful',
-      token, 
+      token,
       user: {
         id: user._id,
         email: user.email,
@@ -121,6 +124,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// verify token validity and return current user data for session persistence
 router.get('/verify', authenticateToken, (req, res) => {
   User.findById(req.user.id)
     .select('-password')

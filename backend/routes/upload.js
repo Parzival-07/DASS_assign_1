@@ -1,3 +1,4 @@
+// file upload routes for single and batch uploads with type validation
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -6,6 +7,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const { authenticateToken } = require('../middleware/auth');
 
+// configure disk storage with context based subdirectories and safe filenames
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -23,6 +25,7 @@ const storage = multer.diskStorage({
   }
 });
 
+// filter uploads to only allow images documents and archives
 const fileFilter = (req, file, cb) => {
   const allowedTypes = [
     'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
@@ -43,9 +46,10 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } 
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
+// upload a single file and return its URL
 router.post('/file', authenticateToken, upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
@@ -69,6 +73,7 @@ router.post('/file', authenticateToken, upload.single('file'), (req, res) => {
   }
 });
 
+// upload up to 5 files at once and return their URLs
 router.post('/files', authenticateToken, upload.array('files', 5), (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
@@ -89,6 +94,7 @@ router.post('/files', authenticateToken, upload.array('files', 5), (req, res) =>
   }
 });
 
+// handle multer errors with user friendly messages
 router.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {

@@ -1,3 +1,4 @@
+// team chat routes for polling based messaging typing indicators and file sharing
 const express = require('express');
 const router = express.Router();
 const ChatMessage = require('../models/ChatMessage');
@@ -9,6 +10,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const { authenticateToken } = require('../middleware/auth');
 
+// configure chat file upload storage with size limit and safe filenames
 const chatUploadsDir = path.join(__dirname, '..', 'uploads', 'chat');
 if (!fs.existsSync(chatUploadsDir)) fs.mkdirSync(chatUploadsDir, { recursive: true });
 const chatStorage = multer.diskStorage({
@@ -21,11 +23,13 @@ const chatStorage = multer.diskStorage({
 });
 const chatUpload = multer({
   storage: chatStorage,
-  limits: { fileSize: 10 * 1024 * 1024 } 
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-const onlineUsers = {}; 
-const typingUsers = {}; 
+// in memory stores for online presence and typing indicator tracking
+const onlineUsers = {};
+const typingUsers = {};
+// verify that a user is a member of a team before allowing chat access
 const verifyTeamMember = async (teamId, userId) => {
   const team = await Team.findById(teamId);
   if (!team) return null;
@@ -33,6 +37,7 @@ const verifyTeamMember = async (teamId, userId) => {
   return team;
 };
 
+// send a text or link message to the team chat
 router.post('/send', authenticateToken, async (req, res) => {
   try {
     const { teamId, message, messageType } = req.body;
@@ -67,6 +72,7 @@ router.post('/send', authenticateToken, async (req, res) => {
   }
 });
 
+// get messages with online status and typing indicators for polling
 router.get('/messages/:teamId', authenticateToken, async (req, res) => {
   try {
     const team = await verifyTeamMember(req.params.teamId, req.user.id);
@@ -74,7 +80,7 @@ router.get('/messages/:teamId', authenticateToken, async (req, res) => {
 
     const { since, limit } = req.query;
     const query = { teamId: req.params.teamId };
-    
+
     if (since) {
       query.createdAt = { $gt: new Date(since) };
     }
@@ -92,7 +98,7 @@ router.get('/messages/:teamId', authenticateToken, async (req, res) => {
     const online = {};
     if (onlineUsers[teamId]) {
       for (const [uid, lastSeen] of Object.entries(onlineUsers[teamId])) {
-        online[uid] = (now - lastSeen) < 30000; 
+        online[uid] = (now - lastSeen) < 30000;
       }
     }
 
@@ -111,6 +117,7 @@ router.get('/messages/:teamId', authenticateToken, async (req, res) => {
   }
 });
 
+// record typing indicator for a user in a team chat
 router.post('/typing', authenticateToken, async (req, res) => {
   try {
     const { teamId } = req.body;
@@ -131,6 +138,7 @@ router.post('/typing', authenticateToken, async (req, res) => {
   }
 });
 
+// heartbeat endpoint to maintain online presence without sending messages
 router.post('/heartbeat', authenticateToken, async (req, res) => {
   try {
     const { teamId } = req.body;
@@ -145,6 +153,7 @@ router.post('/heartbeat', authenticateToken, async (req, res) => {
   }
 });
 
+// count unread messages since a given timestamp for badge display
 router.get('/unread/:teamId', authenticateToken, async (req, res) => {
   try {
     const { since } = req.query;
@@ -156,7 +165,7 @@ router.get('/unread/:teamId', authenticateToken, async (req, res) => {
     const count = await ChatMessage.countDocuments({
       teamId: req.params.teamId,
       createdAt: { $gt: new Date(since) },
-      userId: { $ne: req.user.id } 
+      userId: { $ne: req.user.id }
     });
 
     res.json({ count });
@@ -165,6 +174,7 @@ router.get('/unread/:teamId', authenticateToken, async (req, res) => {
   }
 });
 
+// upload and share a file in the team chat
 router.post('/send-file', authenticateToken, chatUpload.single('file'), async (req, res) => {
   try {
     const { teamId } = req.body;
