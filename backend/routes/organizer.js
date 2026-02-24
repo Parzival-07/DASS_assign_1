@@ -364,6 +364,14 @@ router.put('/event/:id/edit', authenticateToken, isOrganizer, async (req, res) =
 
     const updates = req.body;
 
+    // Convert Date -> the same minute-precision format used by <input type="datetime-local">
+    const toDatetimeLocalMinute = (d) => {
+      const dt = new Date(d);
+      if (Number.isNaN(dt.getTime())) return '';
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+    };
+
     if (event.status === 'draft') {
       Object.assign(event, updates);
     }
@@ -371,8 +379,29 @@ router.put('/event/:id/edit', authenticateToken, isOrganizer, async (req, res) =
       const allowedFields = ['eventDescription', 'registrationDeadline', 'registrationLimit'];
       for (const field of allowedFields) {
         if (updates[field] !== undefined) {
-          if (field === 'registrationDeadline' && new Date(updates[field]) < new Date(event.registrationDeadline)) {
-            return res.status(400).json({ message: 'Can only extend registration deadline' });
+          if (field === 'registrationDeadline') {
+            // If the client re-sends the existing datetime-local value (common when editing other fields),
+            // do not treat timezone/format differences as a real change.
+            const oldMinute = toDatetimeLocalMinute(event.registrationDeadline);
+            const newMinuteRaw = String(updates[field] || '').slice(0, 16);
+            if (newMinuteRaw && oldMinute && newMinuteRaw === oldMinute) {
+              continue;
+            }
+
+            const newDeadline = new Date(updates[field]);
+            if (Number.isNaN(newDeadline.getTime())) {
+              return res.status(400).json({ message: 'Invalid registration deadline' });
+            }
+
+            const oldDeadline = new Date(event.registrationDeadline);
+            // allow minor truncation differences (< 60s) but block actual shortening
+            if (newDeadline.getTime() < oldDeadline.getTime() - 60000) {
+              return res.status(400).json({ message: 'Can only extend registration deadline, not shorten it' });
+            }
+            // deadline must not exceed event start date
+            if (newDeadline >= new Date(event.eventStartDate)) {
+              return res.status(400).json({ message: 'Registration deadline must be before the event start date' });
+            }
           }
           if (field === 'registrationLimit' && updates[field] < event.registrationLimit) {
             return res.status(400).json({ message: 'Can only increase registration limit' });
@@ -398,8 +427,15 @@ router.put('/event/:id/form', authenticateToken, isOrganizer, async (req, res) =
     const event = await Event.findOne({ _id: req.params.id, organizerId: req.user.id });
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
-    if (event.formLocked) {
-      return res.status(400).json({ message: 'Form is locked after first registration' });
+    // check for active (non-cancelled) registrations instead of just the formLocked flag
+    const activeRegs = await Registration.countDocuments({ eventId: event._id, status: { $ne: 'cancelled' } });
+    if (activeRegs > 0) {
+      return res.status(400).json({ message: 'Form is locked — there are active registrations' });
+    }
+
+    // unlock form if it was previously locked but all registrations were cancelled
+    if (event.formLocked && activeRegs === 0) {
+      event.formLocked = false;
     }
 
     event.customForm = req.body.customForm;

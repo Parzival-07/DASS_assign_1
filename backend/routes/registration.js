@@ -194,7 +194,7 @@ router.get('/my-events', authenticateToken, async (req, res) => {
     const normal = registrations.filter(r => r.eventType === 'normal');
     const merchandise = registrations.filter(r => r.eventType === 'merchandise');
 
-    res.json({ upcoming, completed, 'cancelled/rejected': cancelled, normal, merchandise, all: registrations });
+    res.json({ upcoming, completed, cancelled, normal, merchandise, all: registrations });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

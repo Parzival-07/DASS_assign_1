@@ -44,7 +44,8 @@ function MyEvents({ token, user, onViewTicket }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      setEvents(data);
+      // remap 'cancelled' key from API to 'cancelled/rejected' for the tab label
+      setEvents({ ...data, 'cancelled/rejected': data['cancelled/rejected'] || data.cancelled || [] });
       setLoading(false);
 
       const allRegs = [...(data.upcoming || []), ...(data.completed || []), ...(data.normal || []), ...(data.merchandise || [])];

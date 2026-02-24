@@ -29,6 +29,15 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
     loadEventDetail();
   }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // convert a Date/ISO string into an <input type="datetime-local"> value in local time
+  const toDatetimeLocalValue = (value) => {
+    if (!value) return '';
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  };
+
   // fetch event details analytics and participant list from backend
   const loadEventDetail = async () => {
     setLoading(true);
@@ -44,9 +53,9 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
         eventName: data.event?.eventName || '',
         eventDescription: data.event?.eventDescription || '',
         eligibility: data.event?.eligibility || '',
-        registrationDeadline: data.event?.registrationDeadline?.slice(0, 16) || '',
-        eventStartDate: data.event?.eventStartDate?.slice(0, 16) || '',
-        eventEndDate: data.event?.eventEndDate?.slice(0, 16) || '',
+        registrationDeadline: toDatetimeLocalValue(data.event?.registrationDeadline),
+        eventStartDate: toDatetimeLocalValue(data.event?.eventStartDate),
+        eventEndDate: toDatetimeLocalValue(data.event?.eventEndDate),
         registrationLimit: data.event?.registrationLimit || 0,
         registrationFee: data.event?.registrationFee || 0,
         eventTags: data.event?.eventTags?.join(', ') || '',
@@ -119,9 +128,18 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
   // save edited event details back to the server
   const saveEdit = async () => {
     try {
-      let payload = { ...editData };
+      let payload = {};
+
       if (event.status === 'draft') {
+        payload = { ...editData };
         payload.eventTags = editData.eventTags ? editData.eventTags.split(',').map(t => t.trim()).filter(t => t) : [];
+        payload.registrationLimit = parseInt(editData.registrationLimit) || 0;
+        payload.registrationFee = parseFloat(editData.registrationFee) || 0;
+
+        if (editData.registrationDeadline) payload.registrationDeadline = new Date(editData.registrationDeadline).toISOString();
+        if (editData.eventStartDate) payload.eventStartDate = new Date(editData.eventStartDate).toISOString();
+        if (editData.eventEndDate) payload.eventEndDate = new Date(editData.eventEndDate).toISOString();
+
         if (event.eventType === 'merchandise') {
           payload.itemDetails = {
             sizes: editData.sizes ? editData.sizes.split(',').map(s => s.trim()).filter(s => s) : [],
@@ -136,7 +154,25 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
           delete payload.stockQuantity;
           delete payload.purchaseLimitPerParticipant;
         }
+      } else if (event.status === 'published') {
+        // Only send allowed fields, and only if they changed.
+        if (editData.eventDescription !== event.eventDescription) {
+          payload.eventDescription = editData.eventDescription;
+        }
+
+        const currentDeadlineLocal = toDatetimeLocalValue(event.registrationDeadline);
+        if (editData.registrationDeadline && editData.registrationDeadline !== currentDeadlineLocal) {
+          payload.registrationDeadline = new Date(editData.registrationDeadline).toISOString();
+        }
+
+        const newLimit = parseInt(editData.registrationLimit);
+        if (!Number.isNaN(newLimit) && newLimit !== event.registrationLimit) {
+          payload.registrationLimit = newLimit;
+        }
+      } else {
+        payload = { ...editData };
       }
+
       const res = await fetch(`${API_URL}/organizer/event/${eventId}/edit`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -602,8 +638,8 @@ function OrganizerEventDetail({ token, eventId, onBack }) {
       {tab === 'form' && (
         <div>
           <h4>Custom Registration Form</h4>
-          {event.formLocked ? (
-            <p className="text-red-600">Form is locked after first registration</p>
+          {event.formLocked && event.currentRegistrations > 0 ? (
+            <p className="text-red-600">Form is locked — there are active registrations</p>
           ) : (
             <>
               {customForm.map((field, index) => (
