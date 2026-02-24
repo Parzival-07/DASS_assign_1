@@ -66,6 +66,10 @@ router.post('/send', authenticateToken, async (req, res) => {
 
     if (typingUsers[teamId]) delete typingUsers[teamId][req.user.id];
 
+    // broadcast new message to all team members in real time via socket
+    const io = req.app.get('io');
+    if (io) io.to(`team:${teamId}`).emit('new-message', { chatMessage });
+
     res.status(201).json({ message: 'Message sent', chatMessage });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -204,6 +208,10 @@ router.post('/send-file', authenticateToken, chatUpload.single('file'), async (r
 
     if (!onlineUsers[teamId]) onlineUsers[teamId] = {};
     onlineUsers[teamId][req.user.id] = Date.now();
+
+    // broadcast file message to team room in real time
+    const io = req.app.get('io');
+    if (io) io.to(`team:${teamId}`).emit('new-message', { chatMessage });
 
     res.status(201).json({ message: 'File shared', chatMessage });
   } catch (error) {

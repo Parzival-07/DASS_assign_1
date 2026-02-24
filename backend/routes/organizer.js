@@ -428,7 +428,10 @@ router.put('/event/:id/form', authenticateToken, isOrganizer, async (req, res) =
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
     // check for active (non-cancelled) registrations instead of just the formLocked flag
-    const activeRegs = await Registration.countDocuments({ eventId: event._id, status: { $ne: 'cancelled' } });
+    const activeRegs = await Registration.countDocuments({
+      eventId: event._id,
+      status: { $nin: ['cancelled', 'rejected'] }
+    });
     if (activeRegs > 0) {
       return res.status(400).json({ message: 'Form is locked — there are active registrations' });
     }

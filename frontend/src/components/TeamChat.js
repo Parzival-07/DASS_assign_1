@@ -1,7 +1,9 @@
-// team chat component for real time messaging between team members
+// team chat component with real-time messaging via Socket.io
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { io } from 'socket.io-client';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || (API_URL.replace('/api', ''));
 
 function TeamChat({ token, teamId, user, teamMembers, onClose }) {
   // state for messages typing indicators and online status
@@ -13,8 +15,7 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
   const [teamName, setTeamName] = useState('');
 
   const messagesEndRef = useRef(null);
-  const pollRef = useRef(null);
-  const heartbeatRef = useRef(null);
+  const socketRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -24,91 +25,84 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // load messages from server with optional since parameter for new messages only
-  const loadMessages = useCallback(async (since) => {
+  // load initial message history from REST API
+  const loadMessages = useCallback(async () => {
     try {
-      const url = since
-        ? `${API_URL}/chat/messages/${teamId}?since=${encodeURIComponent(since)}`
-        : `${API_URL}/chat/messages/${teamId}`;
-      const res = await fetch(url, {
+      const res = await fetch(`${API_URL}/chat/messages/${teamId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (data.messages) {
-        if (since) {
-          setMessages(prev => {
-            const existingIds = new Set(prev.map(m => m._id));
-            const newMsgs = data.messages.filter(m => !existingIds.has(m._id));
-            if (newMsgs.length > 0) {
-              return [...prev, ...newMsgs];
-            }
-            return prev;
-          });
-        } else {
-          setMessages(data.messages);
-        }
-      }
+      if (data.messages) setMessages(data.messages);
       if (data.online) setOnlineStatus(data.online);
-      if (data.typing) setTypingUsers(data.typing);
       if (data.teamName) setTeamName(data.teamName);
     } catch (err) {
       console.error('Error loading messages:', err);
     }
   }, [teamId, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // connect to socket.io and set up real-time event handlers
   useEffect(() => {
     loadMessages();
-  }, [teamId, loadMessages]);
+
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ['websocket', 'polling']
+    });
+    socketRef.current = socket;
+
+    socket.emit('join-team', { teamId });
+
+    // another team member sent a message — add it if not already present
+    socket.on('new-message', ({ chatMessage }) => {
+      setMessages(prev => {
+        if (prev.some(m => m._id === chatMessage._id)) return prev;
+        return [...prev, chatMessage];
+      });
+    });
+
+    // typing indicator from another member
+    socket.on('user-typing', ({ userId }) => {
+      setTypingUsers(prev => prev.includes(userId) ? prev : [...prev, userId]);
+      // auto-clear if no stop-typing event arrives
+      setTimeout(() => {
+        setTypingUsers(prev => prev.filter(id => id !== userId));
+      }, 4000);
+    });
+    socket.on('user-stop-typing', ({ userId }) => {
+      setTypingUsers(prev => prev.filter(id => id !== userId));
+    });
+
+    // online/offline presence from socket connection events
+    socket.on('user-online', ({ userId }) => {
+      setOnlineStatus(prev => ({ ...prev, [userId]: true }));
+    });
+    socket.on('user-offline', ({ userId }) => {
+      setOnlineStatus(prev => ({ ...prev, [userId]: false }));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [teamId, token, loadMessages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // poll for new messages every 3 seconds using the latest message timestamp
-  useEffect(() => {
-    pollRef.current = setInterval(() => {
-      if (messages.length > 0) {
-        const latest = messages[messages.length - 1].createdAt;
-        loadMessages(latest);
-      } else {
-        loadMessages();
-      }
-    }, 3000);
+  // emit typing/stop-typing events through the socket instead of REST
+  const sendTyping = () => {
+    if (socketRef.current) socketRef.current.emit('typing', { teamId });
+  };
 
-    return () => clearInterval(pollRef.current);
-  }, [messages, loadMessages]);
-
-  // send heartbeat every 15 seconds to maintain online presence
-  useEffect(() => {
-    const sendHeartbeat = async () => {
-      try {
-        await fetch(`${API_URL}/chat/heartbeat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ teamId })
-        });
-      } catch (e) { }
-    };
-    sendHeartbeat();
-    heartbeatRef.current = setInterval(sendHeartbeat, 15000);
-    return () => clearInterval(heartbeatRef.current);
-  }, [teamId, token]);
-
-  const sendTyping = async () => {
-    try {
-      await fetch(`${API_URL}/chat/typing`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ teamId })
-      });
-    } catch (e) { }
+  const sendStopTyping = () => {
+    if (socketRef.current) socketRef.current.emit('stop-typing', { teamId });
   };
 
   const handleInputChange = (e) => {
     setNewMessage(e.target.value);
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     sendTyping();
-    typingTimeoutRef.current = setTimeout(() => { }, 3000);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(sendStopTyping, 2000);
   };
 
   // send a text message to the team chat
@@ -123,7 +117,8 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
       });
       const data = await res.json();
       if (data.chatMessage) {
-        setMessages(prev => [...prev, data.chatMessage]);
+        // dedup: socket 'new-message' may have already added this
+        setMessages(prev => prev.some(m => m._id === data.chatMessage._id) ? prev : [...prev, data.chatMessage]);
         setNewMessage('');
         inputRef.current?.focus();
       }
@@ -148,7 +143,8 @@ function TeamChat({ token, teamId, user, teamMembers, onClose }) {
       });
       const data = await res.json();
       if (data.chatMessage) {
-        setMessages(prev => [...prev, data.chatMessage]);
+        // dedup: socket 'new-message' may have already added this
+        setMessages(prev => prev.some(m => m._id === data.chatMessage._id) ? prev : [...prev, data.chatMessage]);
       }
     } catch (err) {
       console.error('Error sharing file');
