@@ -91,9 +91,10 @@ router.post('/approve/:requestId', authenticateToken, isAdmin, async (req, res) 
 
     await User.findByIdAndUpdate(request.organizerId, { password: hashedPassword, mustChangePassword: true });
 
+    const hashedGenPassword = await bcrypt.hash(newPlainPassword, 10);
     request.status = 'approved';
     request.adminComment = comment || '';
-    request.generatedPassword = newPlainPassword;
+    request.generatedPassword = hashedGenPassword;
     request.reviewedAt = new Date();
     request.reviewedBy = req.user.id;
     await request.save();

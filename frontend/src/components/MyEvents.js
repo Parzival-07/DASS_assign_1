@@ -6,7 +6,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function MyEvents({ token, user, onViewTicket }) {
   // state for categorized events team info and chat functionality
-  const [events, setEvents] = useState({ upcoming: [], completed: [], cancelled: [], normal: [], merchandise: [] });
+  const [events, setEvents] = useState({ upcoming: [], completed: [], 'cancelled/rejected': [], normal: [], merchandise: [] });
   const [tab, setTab] = useState('upcoming');
   const [loading, setLoading] = useState(true);
   const [teamInfo, setTeamInfo] = useState({});
@@ -92,7 +92,7 @@ function MyEvents({ token, user, onViewTicket }) {
     }
   };
 
-  const tabs = ['upcoming', 'normal', 'merchandise', 'completed', 'cancelled'];
+  const tabs = ['upcoming', 'normal', 'merchandise', 'completed', 'cancelled/rejected'];
 
   // helper to format date for Google Calendar URL
   const formatGCalDate = (date) => new Date(date).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
@@ -141,7 +141,7 @@ function MyEvents({ token, user, onViewTicket }) {
       <div key={reg.ticketId} className="border border-gray-300 p-2.5 mb-2.5">
         <strong>{reg.eventId?.eventName || 'Event Deleted'}</strong>
         {reg.eventId?.teamBased && <span className="bg-purple-600 text-white px-1.5 py-0.5 rounded ml-2 text-xs">TEAM</span>}
-        <p>Type: {reg.eventType} | Status: <span className={reg.status === 'cancelled' ? 'text-red-600' : 'text-green-600'}>{reg.status}</span></p>
+        <p>Type: {reg.eventType} | Status: <span className={reg.status === 'cancelled' || reg.status === 'rejected' ? 'text-red-600' : 'text-green-600'}>{reg.status}</span></p>
         <p>Organizer: {reg.eventId?.organizerId?.organizationName || 'N/A'}</p>
         {reg.teamName && <p>Team: {reg.teamName}</p>}
 

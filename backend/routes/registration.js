@@ -190,11 +190,11 @@ router.get('/my-events', authenticateToken, async (req, res) => {
       const computed = getComputedStatus(r.eventId);
       return computed === 'completed' || computed === 'closed';
     });
-    const cancelled = registrations.filter(r => r.status === 'cancelled');
+    const cancelled = registrations.filter(r => r.status === 'cancelled' || r.status === 'rejected');
     const normal = registrations.filter(r => r.eventType === 'normal');
     const merchandise = registrations.filter(r => r.eventType === 'merchandise');
 
-    res.json({ upcoming, completed, cancelled, normal, merchandise, all: registrations });
+    res.json({ upcoming, completed, 'cancelled/rejected': cancelled, normal, merchandise, all: registrations });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

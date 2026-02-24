@@ -5,7 +5,7 @@ const RegistrationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   ticketId: { type: String, required: true, unique: true },
   eventType: { type: String, enum: ['normal', 'merchandise'], required: true },
-  status: { type: String, enum: ['confirmed', 'cancelled', 'completed'], default: 'confirmed' },
+  status: { type: String, enum: ['confirmed', 'cancelled', 'completed', 'rejected'], default: 'confirmed' },
   attendance: { type: Boolean, default: false }, 
   attendanceMarkedAt: { type: Date }, 
   attendanceMethod: { type: String, enum: ['manual', 'qr-scan'], default: 'manual' },

@@ -475,11 +475,8 @@ function AdminDashboard({ user, logout, token }) {
                 <p className="my-0.5 text-xs text-gray-400">Submitted: {new Date(r.createdAt).toLocaleString()}</p>
                 {r.adminComment && <p className="my-1 text-gray-600"><strong>Admin Comment:</strong> {r.adminComment}</p>}
                 {r.reviewedAt && <p className="my-0.5 text-xs text-gray-400">Reviewed: {new Date(r.reviewedAt).toLocaleString()}</p>}
-                {r.generatedPassword && (
-                  <p className="my-1"><strong>Generated Password:</strong>{' '}
-                    <code className="bg-gray-200 px-1.5 py-0.5">{r.generatedPassword}</code>
-                    <button onClick={() => copyToClipboard(r.generatedPassword)} className="btn-secondary ml-2 px-2 py-0.5 text-sm">Copy</button>
-                  </p>
+                {r.status === 'approved' && (
+                  <p className="my-1 text-green-700 text-sm">Password was generated and shared at approval time.</p>
                 )}
 
                 {r.status === 'pending' && (
