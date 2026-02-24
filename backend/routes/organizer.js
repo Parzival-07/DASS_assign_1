@@ -380,8 +380,7 @@ router.put('/event/:id/edit', authenticateToken, isOrganizer, async (req, res) =
       for (const field of allowedFields) {
         if (updates[field] !== undefined) {
           if (field === 'registrationDeadline') {
-            // If the client re-sends the existing datetime-local value (common when editing other fields),
-            // do not treat timezone/format differences as a real change.
+           
             const oldMinute = toDatetimeLocalMinute(event.registrationDeadline);
             const newMinuteRaw = String(updates[field] || '').slice(0, 16);
             if (newMinuteRaw && oldMinute && newMinuteRaw === oldMinute) {
@@ -394,7 +393,7 @@ router.put('/event/:id/edit', authenticateToken, isOrganizer, async (req, res) =
             }
 
             const oldDeadline = new Date(event.registrationDeadline);
-            // allow minor truncation differences (< 60s) but block actual shortening
+            
             if (newDeadline.getTime() < oldDeadline.getTime() - 60000) {
               return res.status(400).json({ message: 'Can only extend registration deadline, not shorten it' });
             }
@@ -427,7 +426,7 @@ router.put('/event/:id/form', authenticateToken, isOrganizer, async (req, res) =
     const event = await Event.findOne({ _id: req.params.id, organizerId: req.user.id });
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
-    // check for active (non-cancelled) registrations instead of just the formLocked flag
+   
     const activeRegs = await Registration.countDocuments({
       eventId: event._id,
       status: { $nin: ['cancelled', 'rejected'] }

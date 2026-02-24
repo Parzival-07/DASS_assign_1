@@ -15,7 +15,7 @@ const generateTicketId = () => 'TKT-' + crypto.randomBytes(6).toString('hex').to
 // register a participant for an event with validation stock and custom form checks
 router.post('/register', authenticateToken, async (req, res) => {
   try {
-    const { eventId, selectedSize, selectedColor, selectedVariant, quantity, customFormData, teamName } = req.body;
+    const { eventId, selectedSize, selectedColor, selectedVariant, quantity, customFormData, teamName, items } = req.body;
     const userId = req.user.id;
 
     if (!['iiit-student', 'non-iiit-student'].includes(req.user.role)) {
@@ -97,6 +97,47 @@ router.post('/register', authenticateToken, async (req, res) => {
       if (qty > event.itemDetails.purchaseLimitPerParticipant) {
         return res.status(400).json({ message: `Maximum ${event.itemDetails.purchaseLimitPerParticipant} items per person` });
       }
+
+      // validate per-item selections
+      const hasSizes = event.itemDetails.sizes?.length > 0;
+      const hasColors = event.itemDetails.colors?.length > 0;
+      const hasVariants = event.itemDetails.variants?.length > 0;
+
+      const itemsArr = Array.isArray(items) && items.length === qty ? items : null;
+
+      if (!itemsArr) {
+        // fallback: validate single selection for qty=1
+        if (qty === 1) {
+          if (hasSizes && !selectedSize) return res.status(400).json({ message: 'Please select a size' });
+          if (hasColors && !selectedColor) return res.status(400).json({ message: 'Please select a color' });
+          if (hasVariants && !selectedVariant) return res.status(400).json({ message: 'Please select a variant' });
+          if (hasSizes && !event.itemDetails.sizes.includes(selectedSize)) return res.status(400).json({ message: 'Invalid size selected' });
+          if (hasColors && !event.itemDetails.colors.includes(selectedColor)) return res.status(400).json({ message: 'Invalid color selected' });
+          if (hasVariants && !event.itemDetails.variants.includes(selectedVariant)) return res.status(400).json({ message: 'Invalid variant selected' });
+        } else {
+          return res.status(400).json({ message: 'Please select options for each item' });
+        }
+      } else {
+        for (let i = 0; i < itemsArr.length; i++) {
+          const item = itemsArr[i];
+          if (hasSizes && !item.size) return res.status(400).json({ message: `Please select a size for item ${i + 1}` });
+          if (hasColors && !item.color) return res.status(400).json({ message: `Please select a color for item ${i + 1}` });
+          if (hasVariants && !item.variant) return res.status(400).json({ message: `Please select a variant for item ${i + 1}` });
+          if (hasSizes && !event.itemDetails.sizes.includes(item.size)) return res.status(400).json({ message: `Invalid size for item ${i + 1}` });
+          if (hasColors && !event.itemDetails.colors.includes(item.color)) return res.status(400).json({ message: `Invalid color for item ${i + 1}` });
+          if (hasVariants && !event.itemDetails.variants.includes(item.variant)) return res.status(400).json({ message: `Invalid variant for item ${i + 1}` });
+        }
+      }
+    }
+
+    // build per-item array for storage (normalise from items or single selection)
+    let normalizedItems;
+    if (event.eventType === 'merchandise') {
+      if (Array.isArray(items) && items.length === qty) {
+        normalizedItems = items;
+      } else {
+        normalizedItems = [{ size: selectedSize || '', color: selectedColor || '', variant: selectedVariant || '' }];
+      }
     }
 
     const registration = new Registration({
@@ -104,9 +145,10 @@ router.post('/register', authenticateToken, async (req, res) => {
       userId,
       ticketId: generateTicketId(),
       eventType: event.eventType,
-      selectedSize,
-      selectedColor,
-      selectedVariant,
+      selectedSize: normalizedItems?.[0]?.size || selectedSize,
+      selectedColor: normalizedItems?.[0]?.color || selectedColor,
+      selectedVariant: normalizedItems?.[0]?.variant || selectedVariant,
+      items: normalizedItems || [],
       quantity: qty,
       customFormData,
       teamName
@@ -138,10 +180,11 @@ router.post('/register', authenticateToken, async (req, res) => {
       eventId: event._id,
       userId: userId,
       teamName,
-      selectedSize,
-      selectedColor,
-      selectedVariant,
-      quantity: quantity || 1
+      selectedSize: normalizedItems?.[0]?.size || selectedSize,
+      selectedColor: normalizedItems?.[0]?.color || selectedColor,
+      selectedVariant: normalizedItems?.[0]?.variant || selectedVariant,
+      items: normalizedItems || [],
+      quantity: qty
     }).then(() => console.log(`Ticket email sent to ${user.email}`))
       .catch(err => console.error('Email sending failed:', err.message));
 

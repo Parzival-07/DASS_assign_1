@@ -19,6 +19,8 @@ function EventDetails({ token, eventId, onBack, user }) {
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedVariant, setSelectedVariant] = useState('');
   const [quantity, setQuantity] = useState(1);
+  // per-item selections: each element has { size, color, variant }
+  const [merchItems, setMerchItems] = useState([{ size: '', color: '', variant: '' }]);
 
 
   const [customFormData, setCustomFormData] = useState({});
@@ -37,7 +39,7 @@ function EventDetails({ token, eventId, onBack, user }) {
   const [chatUnread, setChatUnread] = useState(0);
   const [chatLastSeen, setChatLastSeen] = useState(new Date().toISOString());
 
-  useEffect(() => { loadEvent(); }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { loadEvent(); }, [eventId]); 
 
   // poll for unread chat messages when team exists and chat is closed
   useEffect(() => {
@@ -233,10 +235,24 @@ function EventDetails({ token, eventId, onBack, user }) {
 
       const body = { eventId };
       if (event.eventType === 'merchandise') {
-        body.selectedSize = selectedSize;
-        body.selectedColor = selectedColor;
-        body.selectedVariant = selectedVariant;
+        const hasSizes = event.itemDetails?.sizes?.length > 0;
+        const hasColors = event.itemDetails?.colors?.length > 0;
+        const hasVariants = event.itemDetails?.variants?.length > 0;
+
+        // validate each item has required selections
+        for (let i = 0; i < merchItems.length; i++) {
+          const item = merchItems[i];
+          if (hasSizes && !item.size) { setMessage(`Please select a size for item ${i + 1}`); setRegistering(false); return; }
+          if (hasColors && !item.color) { setMessage(`Please select a color for item ${i + 1}`); setRegistering(false); return; }
+          if (hasVariants && !item.variant) { setMessage(`Please select a variant for item ${i + 1}`); setRegistering(false); return; }
+        }
+
+        body.items = merchItems;
         body.quantity = quantity;
+        // legacy single-selection for backward compat
+        body.selectedSize = merchItems[0]?.size || '';
+        body.selectedColor = merchItems[0]?.color || '';
+        body.selectedVariant = merchItems[0]?.variant || '';
       }
       if (event.customForm?.length > 0) body.customFormData = customFormData;
       if (teamName) body.teamName = teamName;
@@ -389,30 +405,70 @@ function EventDetails({ token, eventId, onBack, user }) {
         {event.eventTags?.length > 0 && <p><strong>Tags:</strong> {event.eventTags.join(', ')}</p>}
       </div>
 
-      {/* merchandise options section for size color and variant selection */}
+      {/* merchandise options section with per-item size color variant selection */}
       {event.eventType === 'merchandise' && event.itemDetails && (
         <div className="bg-yellow-100 p-4 my-4">
           <h4>Merchandise Options</h4>
           <p><strong>Stock:</strong> {event.itemDetails.stockQuantity} available</p>
-          {event.itemDetails.sizes?.length > 0 && (
-            <select value={selectedSize} onChange={(e) => setSelectedSize(e.target.value)}>
-              <option value="">Select Size</option>
-              {event.itemDetails.sizes.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+          <p><strong>Max per person:</strong> {event.itemDetails.purchaseLimitPerParticipant}</p>
+
+          <label className="font-bold mt-2 block">Quantity</label>
+          <input
+            type="number" min="1"
+            max={Math.min(event.itemDetails.purchaseLimitPerParticipant, event.itemDetails.stockQuantity)}
+            value={quantity}
+            onChange={(e) => {
+              const newQty = Math.max(1, Math.min(parseInt(e.target.value) || 1, event.itemDetails.purchaseLimitPerParticipant, event.itemDetails.stockQuantity));
+              setQuantity(newQty);
+              setMerchItems(prev => {
+                const updated = [...prev];
+                while (updated.length < newQty) updated.push({ size: '', color: '', variant: '' });
+                return updated.slice(0, newQty);
+              });
+            }}
+          />
+
+          {merchItems.map((item, idx) => (
+            <div key={idx} className="bg-white p-3 my-2 rounded border border-yellow-300">
+              <strong>Item {idx + 1}</strong>
+              <div className="flex gap-2 flex-wrap mt-1">
+                {event.itemDetails.sizes?.length > 0 && (
+                  <select value={item.size} onChange={(e) => {
+                    const updated = [...merchItems];
+                    updated[idx] = { ...updated[idx], size: e.target.value };
+                    setMerchItems(updated);
+                  }}>
+                    <option value="">Select Size *</option>
+                    {event.itemDetails.sizes.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                )}
+                {event.itemDetails.colors?.length > 0 && (
+                  <select value={item.color} onChange={(e) => {
+                    const updated = [...merchItems];
+                    updated[idx] = { ...updated[idx], color: e.target.value };
+                    setMerchItems(updated);
+                  }}>
+                    <option value="">Select Color *</option>
+                    {event.itemDetails.colors.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                )}
+                {event.itemDetails.variants?.length > 0 && (
+                  <select value={item.variant} onChange={(e) => {
+                    const updated = [...merchItems];
+                    updated[idx] = { ...updated[idx], variant: e.target.value };
+                    setMerchItems(updated);
+                  }}>
+                    <option value="">Select Variant *</option>
+                    {event.itemDetails.variants.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {quantity > 0 && event.registrationFee > 0 && (
+            <p className="mt-2 font-bold">Total: ₹{event.registrationFee * quantity}</p>
           )}
-          {event.itemDetails.colors?.length > 0 && (
-            <select value={selectedColor} onChange={(e) => setSelectedColor(e.target.value)}>
-              <option value="">Select Color</option>
-              {event.itemDetails.colors.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          )}
-          {event.itemDetails.variants?.length > 0 && (
-            <select value={selectedVariant} onChange={(e) => setSelectedVariant(e.target.value)}>
-              <option value="">Select Variant</option>
-              {event.itemDetails.variants.map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
-          )}
-          <input type="number" min="1" max={event.itemDetails.purchaseLimitPerParticipant} value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value))} placeholder="Quantity" />
         </div>
       )}
 

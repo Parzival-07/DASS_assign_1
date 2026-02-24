@@ -16,6 +16,13 @@ const RegistrationSchema = new mongoose.Schema({
   selectedColor: String,
   selectedVariant: String,
   quantity: { type: Number, default: 1 },
+
+  // per-item selections when quantity > 1 (each element has its own size/color/variant)
+  items: [{
+    size: String,
+    color: String,
+    variant: String
+  }],
   
   customFormData: { type: Map, of: mongoose.Schema.Types.Mixed }, 
   

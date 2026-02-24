@@ -96,10 +96,23 @@ function TicketView({ token, ticketId, onBack }) {
 
         {ticket.eventType === 'merchandise' && (
           <div>
-            {ticket.selectedSize && <p><strong>Size:</strong> {ticket.selectedSize}</p>}
-            {ticket.selectedColor && <p><strong>Color:</strong> {ticket.selectedColor}</p>}
-            {ticket.selectedVariant && <p><strong>Variant:</strong> {ticket.selectedVariant}</p>}
             <p><strong>Quantity:</strong> {ticket.quantity}</p>
+            {ticket.items?.length > 0 ? (
+              ticket.items.map((item, idx) => (
+                <div key={idx} className="bg-gray-100 p-2 my-1 rounded text-sm">
+                  <strong>Item {idx + 1}:</strong>
+                  {item.size && <span> Size: {item.size}</span>}
+                  {item.color && <span> | Color: {item.color}</span>}
+                  {item.variant && <span> | Variant: {item.variant}</span>}
+                </div>
+              ))
+            ) : (
+              <>
+                {ticket.selectedSize && <p><strong>Size:</strong> {ticket.selectedSize}</p>}
+                {ticket.selectedColor && <p><strong>Color:</strong> {ticket.selectedColor}</p>}
+                {ticket.selectedVariant && <p><strong>Variant:</strong> {ticket.selectedVariant}</p>}
+              </>
+            )}
           </div>
         )}
 
