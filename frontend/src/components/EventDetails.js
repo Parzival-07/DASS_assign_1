@@ -15,9 +15,9 @@ function EventDetails({ token, eventId, onBack, user }) {
   const [message, setMessage] = useState('');
   const [registeredTicketId, setRegisteredTicketId] = useState(null);
 
-  const [selectedSize, setSelectedSize] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
-  const [selectedVariant, setSelectedVariant] = useState('');
+  const [selectedSize, setSelectedSize] = useState(''); // eslint-disable-line no-unused-vars
+  const [selectedColor, setSelectedColor] = useState(''); // eslint-disable-line no-unused-vars
+  const [selectedVariant, setSelectedVariant] = useState(''); // eslint-disable-line no-unused-vars
   const [quantity, setQuantity] = useState(1);
   // per-item selections: each element has { size, color, variant }
   const [merchItems, setMerchItems] = useState([{ size: '', color: '', variant: '' }]);
@@ -39,7 +39,7 @@ function EventDetails({ token, eventId, onBack, user }) {
   const [chatUnread, setChatUnread] = useState(0);
   const [chatLastSeen, setChatLastSeen] = useState(new Date().toISOString());
 
-  useEffect(() => { loadEvent(); }, [eventId]); 
+  useEffect(() => { loadEvent(); }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // poll for unread chat messages when team exists and chat is closed
   useEffect(() => {
